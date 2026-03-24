@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>X Detailing — Chat with Us</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="/wrenlo-icon.svg" type="image/svg+xml" />
+</head>
+<body>
+  <div class="chat-container">
+
+    <!-- Header -->
+    <header class="chat-header">
+      <div class="business-info">
+        <div class="business-avatar">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="20" cy="20" r="20" fill="currentColor" opacity="0.15"/>
+            <path d="M10 28 L20 12 L30 28" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="20" cy="20" r="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="business-text">
+          <h1 class="business-name">X Detailing</h1>
+          <p class="business-tagline">Premium Auto Detailing &amp; Protection</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-label">Online</span>
+        </div>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle dark/light mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Messages -->
+    <main class="messages-area" id="messagesArea" role="log" aria-live="polite" aria-label="Chat messages">
+      <!-- Welcome message -->
+      <div class="message-group assistant-group" id="welcomeGroup">
+        <div class="message assistant-message" data-animate>
+          <div class="message-content">
+            <p>Hey there! Welcome to X Detailing. I'm here to help with quotes, appointments, and any questions about our detailing services.</p>
+            <p>What can I help you with today?</p>
+          </div>
+          <span class="message-time">Just now</span>
+        </div>
+      </div>
+
+      <!-- Typing indicator (hidden by default) -->
+      <div class="message-group assistant-group typing-group" id="typingIndicator" hidden>
+        <div class="typing-indicator">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Input area -->
+    <footer class="input-area">
+      <!-- Image preview -->
+      <div class="image-preview-area" id="imagePreviewArea" hidden>
+        <div class="image-preview-inner">
+          <img id="imagePreview" src="" alt="Upload preview" />
+          <button class="remove-image" id="removeImage" aria-label="Remove image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drop zone overlay -->
+      <div class="drop-overlay" id="dropOverlay" hidden>
+        <div class="drop-overlay-content">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>Drop image to attach</p>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <button class="attach-btn" id="attachBtn" aria-label="Attach image" title="Attach an image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+          </svg>
+        </button>
+        <input type="file" id="fileInput" accept="image/*" hidden aria-label="Upload image" />
+
+        <div class="textarea-wrapper">
+          <textarea
+            id="messageInput"
+            placeholder="Message X Detailing…"
+            rows="1"
+            aria-label="Type your message"
+            autocomplete="off"
+            spellcheck="true"
+          ></textarea>
+        </div>
+
+        <button class="send-btn" id="sendBtn" aria-label="Send message" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </footer>
+
+    <!-- Powered by badge -->
+    <div class="powered-by">
+      Powered by <span class="powered-by-name"><img src="/wrenlo-icon.svg" class="wrenlo-icon" alt="" aria-hidden="true" /> wrenlo</span>
+    </div>
+
+  </div>
+
+  <script src="/chat.js"></script>
+</body>
+</html>
