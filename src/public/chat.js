@@ -4,7 +4,7 @@
    ============================================================ */
 
 const CONFIG = {
-  businessId: 'xdetailing-001',
+  businessId: window.location.pathname.split('/')[2] || null,
   apiBase: '',              // same origin
   maxImageBytes: 5 * 1024 * 1024,
   typingDelayMin: 400,
@@ -398,6 +398,23 @@ chatContainer.addEventListener('drop', e => {
    ============================================================ */
 function init() {
   initTheme();
+
+  if (!CONFIG.businessId) {
+    messagesArea.innerHTML = `
+      <div class="message-group assistant-group">
+        <div class="message assistant-message">
+          <div class="message-content">
+            <p>This chat widget requires a business ID in the URL.</p>
+          </div>
+        </div>
+      </div>`;
+    messageInput.disabled = true;
+    messageInput.placeholder = 'Chat unavailable';
+    sendBtn.disabled = true;
+    attachBtn.disabled = true;
+    return;
+  }
+
   scrollToBottom(false);
   messageInput.focus();
 }

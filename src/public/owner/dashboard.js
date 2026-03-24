@@ -1,7 +1,7 @@
 'use strict';
 
 // ── Config ─────────────────────────────────────────────────────────────────────
-const BUSINESS_ID = new URLSearchParams(location.search).get('b') || 'xdetailing-001';
+const BUSINESS_ID = window.location.pathname.split('/')[2] || null;
 const HOT_THRESHOLD = 3;
 const REFRESH_MS = 30_000;
 
@@ -549,6 +549,13 @@ async function init() {
 
   // List view is visible by default
   document.getElementById('view-list')?.classList.add('active');
+
+  if (!BUSINESS_ID) {
+    const list = document.getElementById('conv-list');
+    const loading = list?.querySelector('.loading-state');
+    if (loading) loading.innerHTML = `<span style="color:var(--text-tertiary)">No business selected</span>`;
+    return;
+  }
 
   try {
     await Promise.all([loadSettings(), loadStats(), loadConversations()]);

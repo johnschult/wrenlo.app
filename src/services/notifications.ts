@@ -67,9 +67,9 @@ function buildCustomerSummary(conversation: Conversation, recentMessage: string)
   return lines.join(' | ');
 }
 
-function buildClaimUrl(conversationId: string): string {
+function buildClaimUrl(businessId: string, conversationId: string): string {
   const base = process.env.BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
-  return `${base}/conversations/${conversationId}/claim`;
+  return `${base}/owner/${businessId}`;
 }
 
 export class NotificationService {
@@ -99,7 +99,7 @@ export class NotificationService {
       conversationId: conversation.id,
       customerSummary: buildCustomerSummary(conversation, recentCustomerMessage),
       triggerReason,
-      claimUrl: buildClaimUrl(conversation.id),
+      claimUrl: buildClaimUrl(business.id, conversation.id),
       timestamp: new Date().toISOString(),
     };
 
