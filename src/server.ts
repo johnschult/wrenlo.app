@@ -23,6 +23,7 @@ app.register(fastifyStatic, {
   root: join(__dirname, 'public'),
   prefix: '/',
   wildcard: false,
+  index: false,
 });
 
 // ── Page routes ─────────────────────────────────────────────────────────────
