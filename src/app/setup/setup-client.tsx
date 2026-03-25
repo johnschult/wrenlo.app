@@ -161,8 +161,8 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
       {step === "success" && success
         ? <SuccessScreen success={success} isEdit={isEdit} />
         : (
-          <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-            <div className="lg:w-105 lg:overflow-y-auto p-6 space-y-6 border-b lg:border-b-0 lg:border-r border-border shrink-0">
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+            <div className="min-h-0 flex-1 overflow-y-auto p-6 space-y-6 border-b border-border lg:w-105 lg:flex-none lg:border-b-0 lg:border-r">
               <UrlAnalyzer
                 urls={urls}
                 onUrlChange={setUrl}
@@ -202,7 +202,7 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
               )}
             </div>
 
-            <div className="flex-1 min-h-100 lg:min-h-0">
+            <div className="h-[44svh] min-h-80 shrink-0 border-t border-border lg:h-auto lg:min-h-0 lg:flex-1 lg:border-t-0">
               {!sessionId
                 ? (
                   <div className="h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
