@@ -1,6 +1,6 @@
-import { auth } from '@clerk/nextjs/server';
-import { NextRequest, NextResponse } from 'next/server';
 import { getConversationById, getConversationMessages } from '@/services/business';
+import { auth } from '@clerk/nextjs/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   _req: NextRequest,

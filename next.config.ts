@@ -5,7 +5,6 @@ const withNextIntl = createNextIntlPlugin('./src/18n/request.ts');
 
 const nextConfig: NextConfig = {
 	serverExternalPackages: ['better-sqlite3'],
-	eslint: { ignoreDuringBuilds: true },
 	outputFileTracingRoot: path.join(__dirname),
 	poweredByHeader: false,
 };

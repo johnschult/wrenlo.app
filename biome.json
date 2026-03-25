@@ -1,22 +1,26 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
-  "organizeImports": { "enabled": true },
-  "linter": {
-    "enabled": true,
-    "rules": { "recommended": true }
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2
-  },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "single",
-      "trailingCommas": "es5"
-    }
-  },
-  "files": {
-    "ignore": [".next", "node_modules", "src/db/migrations"]
-  }
+	"$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
+	"linter": {
+		"enabled": true,
+		"rules": { "recommended": true }
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "space",
+		"indentWidth": 2
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"trailingCommas": "es5"
+		}
+	},
+	"files": {
+		"includes": ["**", "!**/.next", "!**/node_modules", "!**/src/db/migrations"]
+	}
 }
