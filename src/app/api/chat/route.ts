@@ -45,8 +45,23 @@ function parseImagePayload(value: unknown): ChatImagePayload | null {
   return { dataUrl, ...(mimeType ? { mimeType } : {}) };
 }
 
-function buildSystemPrompt(base: string, customer: Customer | null): string {
-  if (!customer || customer.conversationCount === 0) return base;
+function getVoiceInstruction(language: 'en' | 'es'): string {
+  if (language === 'es') {
+    return 'Voice requirement: Speak as the business in first-person plural ("nosotros", "nuestro"). Never refer to the business in third person (for example: "ellos", "la empresa", "el negocio") unless quoting the customer.';
+  }
+
+  return 'Voice requirement: Speak as the business in first-person plural ("we", "our", "us"). Never refer to the business in third person (for example: "they", "their", "the company", "the business") unless quoting the customer.';
+}
+
+function buildSystemPrompt(
+  base: string,
+  customer: Customer | null,
+  language: 'en' | 'es'
+): string {
+  const voiceInstruction = getVoiceInstruction(language);
+  if (!customer || customer.conversationCount === 0) {
+    return `${base}\n\n[${voiceInstruction}]`;
+  }
   const lines = ['This is a returning customer.'];
   if (customer.name) lines.push(`Their name is ${customer.name}.`);
   lines.push(
@@ -62,7 +77,7 @@ function buildSystemPrompt(base: string, customer: Customer | null): string {
       lines.push(`Vehicle info: ${customer.vehicleInfo}.`);
     }
   }
-  return `${base}\n\n[Customer context: ${lines.join(' ')}]`;
+  return `${base}\n\n[${voiceInstruction}]\n\n[Customer context: ${lines.join(' ')}]`;
 }
 
 export async function POST(req: NextRequest) {
@@ -154,7 +169,7 @@ export async function POST(req: NextRequest) {
   const basePrompt = selectedLanguage === 'es'
     ? business.systemPromptEs
     : business.systemPrompt;
-  const systemPrompt = buildSystemPrompt(basePrompt, customer);
+  const systemPrompt = buildSystemPrompt(basePrompt, customer, selectedLanguage);
   const { response: assistantResponse, followUpQuestions } =
     await chatWithFollowups(
       systemPrompt,

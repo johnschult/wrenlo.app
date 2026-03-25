@@ -29,6 +29,14 @@ function parseImagePayload(value: unknown): ChatImagePayload | null {
   return { dataUrl, ...(mimeType ? { mimeType } : {}) };
 }
 
+function getVoiceInstruction(language: 'en' | 'es'): string {
+  if (language === 'es') {
+    return 'Voice requirement: Speak as the business in first-person plural ("nosotros", "nuestro"). Never refer to the business in third person (for example: "ellos", "la empresa", "el negocio") unless quoting the customer.';
+  }
+
+  return 'Voice requirement: Speak as the business in first-person plural ("we", "our", "us"). Never refer to the business in third person (for example: "they", "their", "the company", "the business") unless quoting the customer.';
+}
+
 export async function POST(req: NextRequest) {
   const { sessionId, message, language, image } = await req.json();
   const selectedLanguage = getLanguage(language);
@@ -50,10 +58,11 @@ export async function POST(req: NextRequest) {
   const prompt = selectedLanguage === 'es'
     ? session.systemPromptEs
     : session.systemPrompt;
+  const promptWithVoice = `${prompt}\n\n[${getVoiceInstruction(selectedLanguage)}]`;
 
   const history: Message[] = session.previewMessages.slice(-20);
   const { response, followUpQuestions } = await chatWithFollowups(
-    prompt,
+    promptWithVoice,
     history,
     message,
     1024,
