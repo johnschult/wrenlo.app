@@ -29,7 +29,7 @@ If the site mentions multiple locations, note the primary one.`;
 
 // ── Prompt Generation: extracted data → system prompt ─────────────────────────
 
-export const PROMPT_GENERATION_FROM_EXTRACTION_SYSTEM_PROMPT = `\
+const PROMPT_GENERATION_BASE_SYSTEM_PROMPT = `\
 You are an expert AI receptionist prompt engineer for small service businesses.
 Your job is to take structured business data extracted from a website and produce
 a complete, production-ready system prompt for their AI front desk.
@@ -65,6 +65,14 @@ The example questions MUST:
 - Be actionable by clicking to populate the chat input
 
 Example questions for an auto detailing business: ["How much does a full detail cost?", "Can you do ceramic coating?", "What times do you have available?", "Do you offer mobile detailing?"]`;
+
+export function getPromptGenerationSystemPrompt(language: 'en' | 'es') {
+	if (language === 'es') {
+		return `${PROMPT_GENERATION_BASE_SYSTEM_PROMPT}\n\nIMPORTANT: Write the complete system prompt and example customer questions in Spanish.`;
+	}
+
+	return `${PROMPT_GENERATION_BASE_SYSTEM_PROMPT}\n\nIMPORTANT: Write the complete system prompt and example customer questions in English.`;
+}
 
 // ── Refinement: current prompt + feedback → updated prompt ────────────────────
 

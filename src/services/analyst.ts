@@ -1,11 +1,13 @@
 import {
 	EXTRACTION_SYSTEM_PROMPT,
-	PROMPT_GENERATION_FROM_EXTRACTION_SYSTEM_PROMPT,
+	getPromptGenerationSystemPrompt,
 	REFINEMENT_SYSTEM_PROMPT,
 } from '../prompts/analyst-prompts';
 import type { ExtractedBusinessData } from '../types';
 import { chat } from './llm';
 import { scrapeUrls } from './scraper';
+
+type PromptLocale = 'en' | 'es';
 
 function parseJson<T>(text: string): T {
 	const cleaned = text
@@ -26,6 +28,7 @@ export async function analyzeUrls(
 
 export async function generatePromptFromExtraction(
 	data: ExtractedBusinessData,
+	language: PromptLocale,
 ): Promise<{ systemPrompt: string; exampleQuestions: string[] }> {
 	const userMessage = `Extracted business data:\n\n${JSON.stringify(
 		data,
@@ -33,10 +36,11 @@ export async function generatePromptFromExtraction(
 		2,
 	)}`;
 	const response = await chat(
-		PROMPT_GENERATION_FROM_EXTRACTION_SYSTEM_PROMPT,
+		getPromptGenerationSystemPrompt(language),
 		[],
 		userMessage,
 		4096,
+		language,
 	);
 
 	// Parse the dual format: system prompt + JSON array of questions

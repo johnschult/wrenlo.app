@@ -2,10 +2,12 @@
 
 import { ThemeToggle, useTheme } from "@/lib/theme";
 import { SignIn } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 export default function SignInPage() {
   const { theme } = useTheme();
+  const t = useTranslations("auth.signIn");
 
   return (
     <div className="bg-muted relative flex min-h-screen w-full items-center justify-center p-6 md:p-10">
@@ -15,7 +17,7 @@ export default function SignInPage() {
       <div className="flex w-full max-w-md flex-col items-center gap-4 md:gap-5">
         <Image
           src="/wrenlo-logo.svg"
-          alt="Wrenlo"
+          alt={t("logoAlt")}
           width={160}
           height={42}
           className="h-auto w-32 md:w-40"

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import type { Business, DbMessage } from "@/db/schema";
+import { LocaleToggle } from "@/lib/locale";
 import { ThemeToggle, useTheme } from "@/lib/theme";
 import type {
   BusinessStats,
@@ -31,6 +32,7 @@ import {
   Settings2,
   TrendingUp,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -44,29 +46,41 @@ function parseDate(str: string) {
   return new Date(s);
 }
 
-function timeAgo(dateStr: string | null) {
+function timeAgo(
+  dateStr: string | null,
+  locale: string,
+  t: ReturnType<typeof useTranslations>,
+) {
   if (!dateStr) return "";
   const diff = Math.floor((Date.now() - parseDate(dateStr).getTime()) / 1000);
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 172800) return "Yesterday";
-  return parseDate(dateStr).toLocaleDateString("en-US", {
+  if (diff < 60) return t("time.justNow");
+  if (diff < 3600) {
+    return t("time.minutesAgo", { value: Math.floor(diff / 60) });
+  }
+  if (diff < 86400) {
+    return t("time.hoursAgo", { value: Math.floor(diff / 3600) });
+  }
+  if (diff < 172800) return t("time.yesterday");
+  return parseDate(dateStr).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
   });
 }
 
-function formatTime(dateStr: string) {
-  return parseDate(dateStr).toLocaleTimeString("en-US", {
+function formatTime(dateStr: string, locale: string) {
+  return parseDate(dateStr).toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
   });
 }
 
-function customerLabel(conv: ConversationWithCustomer) {
-  return conv.customer_name || conv.customer_identifier || "Anonymous";
+function customerLabel(
+  conv: ConversationWithCustomer,
+  t: ReturnType<typeof useTranslations>,
+) {
+  return conv.customer_name || conv.customer_identifier ||
+    t("customer.anonymous");
 }
 
 function statusBadgeClass(status: string) {
@@ -74,13 +88,6 @@ function statusBadgeClass(status: string) {
   if (status === "handed_off") return "bg-brand/15 text-brand";
   return "bg-accent text-muted-foreground";
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  active: "Active",
-  handed_off: "Claimed",
-  closed: "Closed",
-  resolved: "Resolved",
-};
 
 interface Props {
   businessId: string;
@@ -93,6 +100,8 @@ export function DashboardClient(
   { businessId, business, initialConversations, initialStats }: Props,
 ) {
   const { theme } = useTheme();
+  const t = useTranslations("dashboard");
+  const locale = useLocale();
   const [conversations, setConversations] = useState(initialConversations);
   const [stats, setStats] = useState(initialStats);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -119,60 +128,60 @@ export function DashboardClient(
 
   const summaryCards = [
     {
-      label: "Active threads",
+      label: t("summary.activeThreads"),
       value: stats.active,
       icon: MessageSquareText,
       accent: "text-foreground",
-      chip: stats.active === 1 ? "1 live" : `${stats.active} live`,
+      chip: t("summary.liveChip", { value: stats.active }),
       headline: stats.active === 0
-        ? "No active threads right now"
+        ? t("summary.activeNone")
         : stats.active === 1
-        ? "1 thread currently in progress"
-        : `${stats.active} threads currently in progress`,
+        ? t("summary.activeOne")
+        : t("summary.activeMany", { value: stats.active }),
       description: claimedCount === 0
-        ? "No active thread is currently claimed"
+        ? t("summary.claimedNone")
         : claimedCount === 1
-        ? "1 active thread is currently claimed"
-        : `${claimedCount} active threads are currently claimed`,
+        ? t("summary.claimedOne")
+        : t("summary.claimedMany", { value: claimedCount }),
     },
     {
-      label: "Hot leads",
+      label: t("summary.hotLeads"),
       value: stats.hot_leads,
       icon: Flame,
       accent: stats.hot_leads > 0 ? "text-brand" : "text-foreground",
-      chip: `score ${HOT_THRESHOLD}+`,
+      chip: t("summary.scoreChip", { value: HOT_THRESHOLD }),
       headline: stats.hot_leads === 0
-        ? "No hot leads above the threshold"
+        ? t("summary.hotNone")
         : stats.hot_leads === 1
-        ? "1 conversation needs attention"
-        : `${stats.hot_leads} conversations need attention`,
+        ? t("summary.hotOne")
+        : t("summary.hotMany", { value: stats.hot_leads }),
       description: highestLeadScore === 0
-        ? "No lead score recorded yet"
-        : `Highest lead score is ${highestLeadScore}`,
+        ? t("summary.highestNone")
+        : t("summary.highestValue", { value: highestLeadScore }),
     },
     {
-      label: "Started today",
+      label: t("summary.startedToday"),
       value: stats.today,
       icon: TrendingUp,
       accent: "text-foreground",
-      chip: "today",
+      chip: t("summary.todayChip"),
       headline: stats.today === 0
-        ? "No new conversations started today"
+        ? t("summary.todayNone")
         : stats.today === 1
-        ? "1 conversation started today"
-        : `${stats.today} conversations started today`,
-      description: "Based on conversation start time",
+        ? t("summary.todayOne")
+        : t("summary.todayMany", { value: stats.today }),
+      description: t("summary.todayBased"),
     },
     {
-      label: "Total tracked",
+      label: t("summary.totalTracked"),
       value: stats.total,
       icon: Inbox,
       accent: "text-foreground",
-      chip: "all time",
+      chip: t("summary.allTimeChip"),
       headline: stats.total === 1
-        ? "1 tracked conversation in the inbox"
-        : `${stats.total} tracked conversations in the inbox`,
-      description: "Active, claimed, and closed threads",
+        ? t("summary.totalOne")
+        : t("summary.totalMany", { value: stats.total }),
+      description: t("summary.totalDescription"),
     },
   ] as const;
 
@@ -222,7 +231,10 @@ export function DashboardClient(
 
   const handleClaim = async () => {
     if (!selectedId) return;
-    await claimConversationAction(selectedId, business.ownerName ?? "Owner");
+    await claimConversationAction(
+      selectedId,
+      business.ownerName ?? t("ownerFallback"),
+    );
     await refresh();
     const response = await fetch(`/api/conversations/${selectedId}`);
     const data = await response.json();
@@ -231,7 +243,7 @@ export function DashboardClient(
   };
 
   const handleRelease = async () => {
-    if (!selectedId || !confirm("Release back to AI?")) return;
+    if (!selectedId || !confirm(t("releaseConfirm"))) return;
     await releaseConversationAction(selectedId);
     await refresh();
   };
@@ -245,7 +257,7 @@ export function DashboardClient(
       await sendOwnerMessageAction(
         selectedId,
         text,
-        business.ownerName ?? "Owner",
+        business.ownerName ?? t("ownerFallback"),
       );
       const response = await fetch(`/api/conversations/${selectedId}`);
       const data = await response.json();
@@ -282,7 +294,7 @@ export function DashboardClient(
                 {business.name}
               </span>
               <span className="text-xs text-muted-foreground">
-                Owner dashboard
+                {t("ownerDashboard")}
               </span>
             </div>
           </Link>
@@ -295,9 +307,10 @@ export function DashboardClient(
             >
               <Link href={`/setup/${businessId}`} className="flex items-center">
                 <Settings2 className="size-4" />
-                Setup
+                {t("setup")}
               </Link>
             </Button>
+            <LocaleToggle />
             <ThemeToggle />
             <UserButton appearance={clerkAppearance} />
           </div>
@@ -311,21 +324,24 @@ export function DashboardClient(
               <MessageSquareText className="size-3.5 text-foreground" />
               <span className="font-medium">{stats.active}</span>
               <span className="text-muted-foreground">active</span>
+              <span className="text-muted-foreground">
+                {t("mobile.active")}
+              </span>
             </div>
             <div className="flex min-w-max items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1.5 text-xs">
               <Flame className="size-3.5 text-brand" />
               <span className="font-medium">{stats.hot_leads}</span>
-              <span className="text-muted-foreground">hot</span>
+              <span className="text-muted-foreground">{t("mobile.hot")}</span>
             </div>
             <div className="flex min-w-max items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1.5 text-xs">
               <TrendingUp className="size-3.5 text-foreground" />
               <span className="font-medium">{stats.today}</span>
-              <span className="text-muted-foreground">today</span>
+              <span className="text-muted-foreground">{t("mobile.today")}</span>
             </div>
             <div className="flex min-w-max items-center gap-1.5 rounded-lg border border-border/60 bg-card/60 px-2.5 py-1.5 text-xs">
               <Inbox className="size-3.5 text-foreground" />
               <span className="font-medium">{stats.total}</span>
-              <span className="text-muted-foreground">total</span>
+              <span className="text-muted-foreground">{t("mobile.total")}</span>
             </div>
           </div>
         </div>
@@ -336,21 +352,20 @@ export function DashboardClient(
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Gauge className="size-4 text-brand" />
-                  Conversation command center
+                  {t("command.title")}
                 </CardTitle>
                 <Badge variant="secondary" className="bg-brand/15 text-brand">
-                  {conversations.length} open threads
+                  {t("command.openThreads", { value: conversations.length })}
                 </Badge>
               </div>
               <CardDescription className="max-w-none text-base leading-relaxed text-muted-foreground">
-                Monitor active leads, jump into live threads, and hand control
-                back to wrenlo when you are done.
+                {t("command.description")}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
               <div className="flex min-h-32 flex-col rounded-2xl border border-border/60 bg-background/80 p-5">
                 <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground/80">
-                  Active now
+                  {t("command.activeNow")}
                 </p>
                 <p className="mt-auto text-3xl font-semibold tracking-tight text-foreground">
                   {stats.active}
@@ -358,7 +373,7 @@ export function DashboardClient(
               </div>
               <div className="flex min-h-32 flex-col rounded-2xl border border-border/60 bg-background/80 p-5">
                 <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground/80">
-                  Claimed now
+                  {t("command.claimedNow")}
                 </p>
                 <p className="mt-auto text-3xl font-semibold tracking-tight text-foreground">
                   {claimedCount}
@@ -366,7 +381,7 @@ export function DashboardClient(
               </div>
               <div className="flex min-h-32 flex-col rounded-2xl border border-border/60 bg-background/80 p-5">
                 <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground/80">
-                  Highest lead score
+                  {t("command.highestLeadScore")}
                 </p>
                 <p className="mt-auto text-3xl font-semibold tracking-tight text-foreground">
                   {highestLeadScore}
@@ -424,7 +439,7 @@ export function DashboardClient(
                 <div className="flex flex-col items-start justify-between gap-1 md:gap-2">
                   <div className="flex w-full items-center justify-between gap-2">
                     <CardTitle className="text-sm md:text-sm lg:text-base">
-                      Conversations
+                      {t("conversations.title")}
                     </CardTitle>
                     <Badge
                       variant="outline"
@@ -434,7 +449,7 @@ export function DashboardClient(
                     </Badge>
                   </div>
                   <CardDescription className="hidden text-xs md:block md:text-xs lg:text-sm">
-                    Pick a thread to review
+                    {t("conversations.pickThread")}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -447,18 +462,22 @@ export function DashboardClient(
                           <MessageSquareText className="size-6" />
                         </div>
                         <p className="text-sm leading-relaxed">
-                          No conversations yet.<br />Your wrenlo assistant is
-                          ready!
+                          {t("conversations.none")}
+                          <br />
+                          {t("conversations.ready")}
                         </p>
                       </div>
                     )
                     : (
                       conversations.map((conv) => {
                         const isHot = conv.leadScore >= HOT_THRESHOLD;
-                        const label = customerLabel(conv);
-                        const preview = conv.last_message ?? "No messages yet";
+                        const label = customerLabel(conv, t);
+                        const preview = conv.last_message ??
+                          t("conversations.noMessages");
                         const time = timeAgo(
                           conv.last_message_at || conv.updatedAt,
+                          locale,
+                          t,
                         );
                         return (
                           <Button
@@ -500,7 +519,15 @@ export function DashboardClient(
                                     statusBadgeClass(conv.status)
                                   }`}
                                 >
-                                  {STATUS_LABELS[conv.status] ?? conv.status}
+                                  {conv.status === "active"
+                                    ? t("status.active")
+                                    : conv.status === "handed_off"
+                                    ? t("status.claimed")
+                                    : conv.status === "closed"
+                                    ? t("status.closed")
+                                    : conv.status === "resolved"
+                                    ? t("status.resolved")
+                                    : conv.status}
                                 </Badge>
                                 {conv.leadScore > 0 && (
                                   <span className="text-xs text-muted-foreground md:text-[9px] lg:text-[10px]">
@@ -534,7 +561,7 @@ export function DashboardClient(
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1 md:gap-2">
                         <CardTitle className="text-xs md:text-sm lg:text-base">
-                          {customerLabel(selected)}
+                          {customerLabel(selected, t)}
                         </CardTitle>
                         <Badge
                           variant="secondary"
@@ -542,7 +569,13 @@ export function DashboardClient(
                             statusBadgeClass(selected.status)
                           }`}
                         >
-                          {STATUS_LABELS[selected.status]}
+                          {selected.status === "active"
+                            ? t("status.active")
+                            : selected.status === "handed_off"
+                            ? t("status.claimed")
+                            : selected.status === "closed"
+                            ? t("status.closed")
+                            : t("status.resolved")}
                         </Badge>
                         {selected.leadScore >= HOT_THRESHOLD && (
                           <Badge
@@ -555,7 +588,8 @@ export function DashboardClient(
                         )}
                       </div>
                       <CardDescription className="text-[10px] md:text-xs lg:text-sm">
-                        {selected.customer_identifier || "Live conversation"}
+                        {selected.customer_identifier ||
+                          t("detail.liveConversation")}
                       </CardDescription>
                     </div>
                   </div>
@@ -571,7 +605,7 @@ export function DashboardClient(
                     : visibleMessages.length === 0
                     ? (
                       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                        No messages yet
+                        {t("conversations.noMessages")}
                       </div>
                     )
                     : (
@@ -595,7 +629,7 @@ export function DashboardClient(
                           >
                             {msg.role === "assistant" && (
                               <p className="mb-0.5 text-[9px] text-muted-foreground md:mb-1 md:text-[10px]">
-                                wrenlo
+                                {t("detail.assistantName")}
                               </p>
                             )}
                             {msg.role === "owner" && (
@@ -603,14 +637,14 @@ export function DashboardClient(
                                 variant="secondary"
                                 className="mb-1 h-auto border border-brand/30 bg-background/95 px-1.5 py-0 text-[9px] font-semibold uppercase tracking-[0.18em] text-foreground shadow-sm md:text-[10px]"
                               >
-                                Owner
+                                {t("detail.ownerBadge")}
                               </Badge>
                             )}
                             <p className="whitespace-pre-wrap leading-relaxed">
                               {msg.content}
                             </p>
                             <p className="mt-0.5 text-right text-[8px] opacity-50 md:mt-1 md:text-[10px]">
-                              {formatTime(msg.createdAt)}
+                              {formatTime(msg.createdAt, locale)}
                             </p>
                           </div>
                         </div>
@@ -626,7 +660,7 @@ export function DashboardClient(
                         onClick={handleClaim}
                         className="h-9 text-sm md:h-11 md:text-base w-full"
                       >
-                        Take Over Conversation
+                        {t("detail.takeOver")}
                       </Button>
                     )
                     : (
@@ -641,7 +675,7 @@ export function DashboardClient(
                                 handleSend();
                               }
                             }}
-                            placeholder="Message…"
+                            placeholder={t("detail.messagePlaceholder")}
                             rows={1}
                             className="min-h-8 text-xs md:min-h-10 md:text-sm flex-1 resize-none bg-card"
                           />
@@ -659,7 +693,7 @@ export function DashboardClient(
                           size="sm"
                           className="w-full text-[10px] md:text-xs text-muted-foreground hover:text-foreground h-6 md:h-9"
                         >
-                          Release back to AI
+                          {t("detail.release")}
                         </Button>
                       </div>
                     )}
@@ -674,11 +708,10 @@ export function DashboardClient(
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      Select a conversation
+                      {t("detail.selectTitle")}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Choose a thread from the left to inspect messages or take
-                      over.
+                      {t("detail.selectDescription")}
                     </p>
                   </div>
                 </CardContent>

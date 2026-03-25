@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "next-intl";
 
 interface RefineSectionProps {
   chips: string[];
@@ -23,11 +24,12 @@ export function RefineSection({
   analyzing,
   error,
 }: RefineSectionProps) {
+  const t = useTranslations("setup.refine");
   return (
     <section>
-      <h3 className="font-semibold mb-1">Refine your AI</h3>
+      <h3 className="font-semibold mb-1">{t("title")}</h3>
       <p className="text-muted-foreground text-xs mb-3">
-        Chat with the preview, then tell it what to change.
+        {t("description")}
       </p>
       {chips.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
@@ -53,7 +55,7 @@ export function RefineSection({
               onRefine();
             }
           }}
-          placeholder="e.g., Make it more casual, add pricing, don't mention competitors…"
+          placeholder={t("placeholder")}
           rows={2}
           disabled={analyzing}
           className="min-h-20 flex-1 resize-none bg-card"
@@ -65,7 +67,7 @@ export function RefineSection({
           className="self-stretch h-11"
           type="button"
         >
-          {refining ? "…" : "Refine"}
+          {refining ? t("refining") : t("refine")}
         </Button>
       </div>
     </section>

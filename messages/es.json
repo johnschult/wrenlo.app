@@ -1,1 +1,200 @@
-{}
+{
+	"common": {
+		"themeToggle": {
+			"ariaLabel": "Cambiar tema",
+			"switchToLight": "Cambiar a modo claro",
+			"switchToDark": "Cambiar a modo oscuro"
+		},
+		"localeToggle": {
+			"ariaLabel": "Cambiar idioma",
+			"switching": "Cambiando idioma",
+			"switchTo": "Cambiar a {locale}"
+		}
+	},
+	"landing": {
+		"logoAlt": "wrenlo",
+		"tagline": "Una recepcionista con IA que conoce tu negocio, atiende clientes y te envía los leads que importan.",
+		"getStarted": "Comenzar",
+		"comingSoon": "Próximamente"
+	},
+	"auth": {
+		"signIn": {
+			"logoAlt": "Wrenlo"
+		},
+		"signUp": {
+			"logoAlt": "Wrenlo",
+			"respondTitle": "Responde 24/7",
+			"respondBody": "Tu recepcionista con IA responde al instante para que los prospectos no esperen al horario comercial.",
+			"leadsTitle": "Captura mejores leads",
+			"leadsBody": "Wrenlo recopila contexto, intención y datos de contacto durante conversaciones reales.",
+			"controlTitle": "Mantén el control",
+			"controlBody": "Entra a cualquier hilo, toma el control y devuelve la conversación a la IA cuando quieras.",
+			"launchTitle": "Lanza rápido",
+			"launchBody": "Conecta la URL de tu negocio, prueba tu asistente y publícalo en minutos."
+		}
+	},
+	"setup": {
+		"header": {
+			"dashboard": "Panel"
+		},
+		"errors": {
+			"enterOneUrl": "Ingresa al menos una URL",
+			"analysisFailed": "Falló el análisis",
+			"refineFailed": "Falló el ajuste",
+			"goLiveFailed": "Falló la publicación"
+		},
+		"preview": {
+			"placeholder": "La vista previa de tu recepcionista con IA aparecerá aquí",
+			"chatPreviewTitle": "Vista previa del chat",
+			"languageLabel": "Idioma de la vista previa",
+			"english": "Inglés",
+			"spanish": "Español"
+		},
+		"urlAnalyzer": {
+			"editTitle": "Edita tu recepcionista con IA",
+			"createTitle": "Configura tu recepcionista con IA",
+			"editDescription": "Ajusta tu IA o analiza nuevas URLs para actualizarla.",
+			"createDescription": "Pega la URL de tu negocio y construiremos tu IA a partir de ella.",
+			"firstUrlPlaceholder": "https://tunegocio.com",
+			"additionalUrlPlaceholder": "https://otra-pagina.com",
+			"addAnother": "+ Agregar otra URL",
+			"analyzing": "Analizando...",
+			"reanalyzeFromUrls": "Volver a analizar desde URLs",
+			"reanalyze": "Volver a analizar",
+			"analyzeBusiness": "Analizar mi negocio"
+		},
+		"refine": {
+			"title": "Ajusta tu IA",
+			"description": "Chatea con la vista previa y luego dile qué cambiar.",
+			"placeholder": "p. ej., hazlo más casual, agrega precios, no menciones competidores...",
+			"refining": "...",
+			"refine": "Ajustar"
+		},
+		"goLive": {
+			"saveChangesTitle": "Guardar cambios",
+			"goLiveTitle": "Publicar",
+			"businessName": "Nombre del negocio",
+			"businessNamePlaceholder": "Nombre de tu negocio",
+			"yourName": "Tu nombre",
+			"email": "Correo",
+			"optional": "Opcional",
+			"saving": "Guardando...",
+			"goingLive": "Publicando...",
+			"saveChanges": "Guardar cambios",
+			"goLive": "Publicar"
+		},
+		"extracted": {
+			"fallbackBusiness": "Información del negocio",
+			"badge": "Extraído",
+			"hideDetails": "Ocultar detalles",
+			"showDetails": "Mostrar detalles",
+			"type": "Tipo:",
+			"services": "Servicios:",
+			"hours": "Horario:",
+			"phone": "Teléfono:",
+			"location": "Ubicación:",
+			"tone": "Tono:"
+		},
+		"success": {
+			"savedTitle": "¡Cambios guardados!",
+			"liveTitle": "¡Ya está en vivo!",
+			"description": "Tu recepcionista con IA está lista. Comparte el enlace del widget o intégralo en tu sitio.",
+			"widgetUrl": "URL del widget",
+			"dashboard": "Panel",
+			"goToDashboard": "Ir al panel"
+		}
+	},
+	"widget": {
+		"attachedPhotoPrompt": "Adjunté una foto. ¿Puedes ayudarme?",
+		"requestFailed": "Lo siento, algo salió mal. Inténtalo de nuevo.",
+		"previewMode": "Modo vista previa",
+		"aiFrontDesk": "Recepcionista con IA",
+		"emptyGreeting": "¡Hola! ¿Cómo puedo ayudarte hoy?",
+		"attachedAlt": "Adjunto",
+		"pendingAlt": "Pendiente",
+		"attachAria": "Adjuntar imagen",
+		"messagePlaceholder": "Mensaje para {businessName}...",
+		"sendAria": "Enviar",
+		"poweredBy": "impulsado por"
+	},
+	"dashboard": {
+		"ownerDashboard": "Panel de propietario",
+		"setup": "Configuración",
+		"releaseConfirm": "¿Devolver a la IA?",
+		"ownerFallback": "Propietario",
+		"time": {
+			"justNow": "justo ahora",
+			"minutesAgo": "hace {value} min",
+			"hoursAgo": "hace {value} h",
+			"yesterday": "Ayer"
+		},
+		"customer": {
+			"anonymous": "Anónimo"
+		},
+		"status": {
+			"active": "Activo",
+			"claimed": "Tomado",
+			"closed": "Cerrado",
+			"resolved": "Resuelto"
+		},
+		"summary": {
+			"activeThreads": "Hilos activos",
+			"hotLeads": "Leads calientes",
+			"startedToday": "Iniciados hoy",
+			"totalTracked": "Total rastreados",
+			"scoreChip": "score {value}+",
+			"todayChip": "hoy",
+			"allTimeChip": "histórico",
+			"liveChip": "{value} en vivo",
+			"activeNone": "No hay hilos activos ahora",
+			"activeOne": "1 hilo en curso",
+			"activeMany": "{value} hilos en curso",
+			"claimedNone": "No hay hilos activos tomados",
+			"claimedOne": "1 hilo activo tomado",
+			"claimedMany": "{value} hilos activos tomados",
+			"hotNone": "No hay leads calientes por encima del umbral",
+			"hotOne": "1 conversación necesita atención",
+			"hotMany": "{value} conversaciones necesitan atención",
+			"highestNone": "Aún no hay score de lead",
+			"highestValue": "El score más alto es {value}",
+			"todayNone": "No se iniciaron conversaciones hoy",
+			"todayOne": "1 conversación iniciada hoy",
+			"todayMany": "{value} conversaciones iniciadas hoy",
+			"todayBased": "Basado en hora de inicio",
+			"totalOne": "1 conversación rastreada en la bandeja",
+			"totalMany": "{value} conversaciones rastreadas en la bandeja",
+			"totalDescription": "Hilos activos, tomados y cerrados"
+		},
+		"mobile": {
+			"active": "activo",
+			"hot": "hot",
+			"today": "hoy",
+			"total": "total"
+		},
+		"command": {
+			"title": "Centro de control de conversaciones",
+			"openThreads": "{value} hilos abiertos",
+			"description": "Monitorea leads activos, entra a hilos en vivo y devuelve el control a wrenlo cuando termines.",
+			"activeNow": "Activos ahora",
+			"claimedNow": "Tomados ahora",
+			"highestLeadScore": "Score más alto"
+		},
+		"conversations": {
+			"title": "Conversaciones",
+			"pickThread": "Elige un hilo para revisar",
+			"none": "Aún no hay conversaciones.",
+			"ready": "¡Tu asistente de wrenlo está listo!",
+			"noMessages": "Aún no hay mensajes"
+		},
+		"detail": {
+			"liveConversation": "Conversación en vivo",
+			"assistantName": "wrenlo",
+			"ownerBadge": "Propietario",
+			"takeOver": "Tomar conversación",
+			"messagePlaceholder": "Mensaje...",
+			"release": "Devolver a la IA",
+			"selectTitle": "Selecciona una conversación",
+			"selectDescription": "Elige un hilo a la izquierda para inspeccionar mensajes o tomar el control."
+		}
+	}
+}

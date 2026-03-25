@@ -3,10 +3,12 @@
 import { ThemeToggle, useTheme } from "@/lib/theme";
 import { SignUp } from "@clerk/nextjs";
 import { ChartLine, Clock, ShieldCheck, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 export default function SignUpPage() {
   const { theme } = useTheme();
+  const t = useTranslations("auth.signUp");
 
   return (
     <div className="bg-muted relative flex min-h-screen w-full items-center justify-center p-6 md:p-10">
@@ -16,7 +18,7 @@ export default function SignUpPage() {
       <div className="flex w-full max-w-6xl flex-col items-center gap-8 md:gap-10">
         <Image
           src="/wrenlo-logo.svg"
-          alt="Wrenlo"
+          alt={t("logoAlt")}
           width={160}
           height={42}
           className="h-auto w-32 md:w-40"
@@ -28,41 +30,37 @@ export default function SignUpPage() {
               <li>
                 <div className="flex items-center gap-2">
                   <Clock className="size-4" />
-                  <p className="font-semibold">Respond 24/7</p>
+                  <p className="font-semibold">{t("respondTitle")}</p>
                 </div>
                 <p className="text-muted-foreground mt-2 text-sm">
-                  Your AI front desk replies instantly so prospects never wait
-                  for business hours.
+                  {t("respondBody")}
                 </p>
               </li>
               <li>
                 <div className="flex items-center gap-2">
                   <ChartLine className="size-4" />
-                  <p className="font-semibold">Capture better leads</p>
+                  <p className="font-semibold">{t("leadsTitle")}</p>
                 </div>
                 <p className="text-muted-foreground mt-2 text-sm">
-                  Wrenlo gathers context, lead intent, and contact details
-                  during real conversations.
+                  {t("leadsBody")}
                 </p>
               </li>
               <li>
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="size-4" />
-                  <p className="font-semibold">Stay in control</p>
+                  <p className="font-semibold">{t("controlTitle")}</p>
                 </div>
                 <p className="text-muted-foreground mt-2 text-sm">
-                  Jump into any thread, take over, and hand conversations back
-                  to AI whenever you want.
+                  {t("controlBody")}
                 </p>
               </li>
               <li>
                 <div className="flex items-center gap-2">
                   <Sparkles className="size-4" />
-                  <p className="font-semibold">Launch fast</p>
+                  <p className="font-semibold">{t("launchTitle")}</p>
                 </div>
                 <p className="text-muted-foreground mt-2 text-sm">
-                  Connect your business URL, preview your assistant, then go
-                  live in minutes.
+                  {t("launchBody")}
                 </p>
               </li>
             </ul>

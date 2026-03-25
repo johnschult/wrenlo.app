@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 interface GoLiveFormProps {
   bizName: string;
@@ -29,10 +30,11 @@ export function GoLiveForm({
   analyzing,
   isEdit,
 }: GoLiveFormProps) {
+  const t = useTranslations("setup.goLive");
   return (
     <section className="border-t border-border pt-6">
       <h3 className="font-semibold mb-3">
-        {isEdit ? "Save changes" : "Go live"}
+        {isEdit ? t("saveChangesTitle") : t("goLiveTitle")}
       </h3>
       <div className="space-y-3">
         <div>
@@ -40,14 +42,14 @@ export function GoLiveForm({
             htmlFor="bizName"
             className="mb-1 text-xs text-muted-foreground"
           >
-            Business name
+            {t("businessName")}
           </Label>
           <Input
             id="bizName"
             type="text"
             value={bizName}
             onChange={(e) => onBizNameChange(e.target.value)}
-            placeholder="Your Business Name"
+            placeholder={t("businessNamePlaceholder")}
             disabled={analyzing}
             className="h-11 bg-card"
           />
@@ -58,14 +60,14 @@ export function GoLiveForm({
               htmlFor="ownerName"
               className="mb-1 text-xs text-muted-foreground"
             >
-              Your name
+              {t("yourName")}
             </Label>
             <Input
               id="ownerName"
               type="text"
               value={ownerName}
               onChange={(e) => onOwnerNameChange(e.target.value)}
-              placeholder="Optional"
+              placeholder={t("optional")}
               disabled={analyzing}
               className="h-11 bg-card"
             />
@@ -75,14 +77,14 @@ export function GoLiveForm({
               htmlFor="ownerEmail"
               className="mb-1 text-xs text-muted-foreground"
             >
-              Email
+              {t("email")}
             </Label>
             <Input
               id="ownerEmail"
               type="email"
               value={ownerEmail}
               onChange={(e) => onOwnerEmailChange(e.target.value)}
-              placeholder="Optional"
+              placeholder={t("optional")}
               disabled={analyzing}
               className="h-11 bg-card"
             />
@@ -95,10 +97,10 @@ export function GoLiveForm({
           type="button"
         >
           {goingLive
-            ? isEdit ? "Saving…" : "Going live…"
+            ? isEdit ? t("saving") : t("goingLive")
             : isEdit
-            ? "Save Changes"
-            : "Go Live"}
+            ? t("saveChanges")
+            : t("goLive")}
         </Button>
       </div>
     </section>

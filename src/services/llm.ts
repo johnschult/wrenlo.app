@@ -4,11 +4,28 @@ import type { Message } from '../types';
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-6';
 
+type SupportedLanguage = 'en' | 'es';
+
+function withLanguageInstruction(
+	systemPrompt: string,
+	language?: SupportedLanguage,
+): string {
+	if (!language) return systemPrompt;
+
+	const instruction =
+		language === 'es'
+			? 'Always respond in Spanish. Do not switch languages unless the user explicitly asks you to.'
+			: 'Always respond in English. Do not switch languages unless the user explicitly asks you to.';
+
+	return `${systemPrompt}\n\n${instruction}`;
+}
+
 export async function chat(
 	systemPrompt: string,
 	history: Message[],
 	userMessage: string,
 	maxTokens = 1024,
+	language?: SupportedLanguage,
 ): Promise<string> {
 	const messages: Anthropic.MessageParam[] = [
 		...history.map(m => ({ role: m.role, content: m.content })),
@@ -18,7 +35,7 @@ export async function chat(
 	const response = await client.messages.create({
 		model: MODEL,
 		max_tokens: maxTokens,
-		system: systemPrompt,
+		system: withLanguageInstruction(systemPrompt, language),
 		messages,
 	});
 
@@ -33,8 +50,9 @@ export async function chatWithFollowups(
 	history: Message[],
 	userMessage: string,
 	maxTokens = 1024,
+	language?: SupportedLanguage,
 ): Promise<{ response: string; followUpQuestions: string[] }> {
-	const followupPrompt = `${systemPrompt}
+	const followupPrompt = `${withLanguageInstruction(systemPrompt, language)}
 
 **IMPORTANT: Generate Follow-up Questions**
 After providing your response, provide 2-3 follow-up questions that the user might want to ask next.

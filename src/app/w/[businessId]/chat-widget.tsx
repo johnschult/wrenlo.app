@@ -1,8 +1,14 @@
 "use client";
 
+import {
+  type AppLocale,
+  DEFAULT_LOCALE,
+  isSupportedLocale,
+} from "@/18n/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Moon, Sun } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./widget.module.css";
 
@@ -21,7 +27,28 @@ interface Props {
   businessName: string;
   mode: "live" | "preview";
   initialTheme?: "dark" | "light";
+  initialLocale?: AppLocale;
   exampleQuestions?: string[];
+}
+
+type LocaleMessage = {
+  type?: string;
+  locale?: string;
+};
+
+function resolveLocale(
+  candidates: Array<string | null | undefined>,
+): AppLocale {
+  for (const candidate of candidates) {
+    if (isSupportedLocale(candidate)) return candidate;
+  }
+  return DEFAULT_LOCALE;
+}
+
+function getLocaleFromSearch(): AppLocale | null {
+  if (typeof window === "undefined") return null;
+  const searchLocale = new URL(window.location.href).searchParams.get("locale");
+  return isSupportedLocale(searchLocale) ? searchLocale : null;
 }
 
 function renderMarkdown(text: string): string {
@@ -58,8 +85,15 @@ function renderMarkdown(text: string): string {
 }
 
 export function ChatWidget(
-  { businessId, sessionId, businessName, mode, initialTheme, exampleQuestions }:
-    Props,
+  {
+    businessId,
+    sessionId,
+    businessName,
+    mode,
+    initialTheme,
+    initialLocale,
+    exampleQuestions,
+  }: Props,
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -75,8 +109,46 @@ export function ChatWidget(
   const [pendingAssistantMessageId, setPendingAssistantMessageId] = useState<
     string | null
   >(null);
+  const appLocale = useLocale();
+  const [activeLocale, setActiveLocale] = useState<AppLocale>(
+    initialLocale ?? DEFAULT_LOCALE,
+  );
+  const t = useTranslations("widget");
   const fileRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const browserLocale = typeof navigator === "undefined"
+      ? null
+      : navigator.language.toLowerCase().split("-")[0];
+    const resolved = resolveLocale([
+      getLocaleFromSearch(),
+      initialLocale,
+      appLocale,
+      browserLocale,
+    ]);
+    setActiveLocale(resolved);
+  }, [initialLocale, appLocale]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent<LocaleMessage>) => {
+      if (!event.data || typeof event.data !== "object") return;
+      if (event.data.type !== "wrenlo:set-locale") return;
+      if (!isSupportedLocale(event.data.locale)) return;
+
+      const nextLocale = event.data.locale;
+      setActiveLocale(nextLocale);
+
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("locale") !== nextLocale) {
+        url.searchParams.set("locale", nextLocale);
+        window.location.replace(url.toString());
+      }
+    };
+
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   useEffect(() => {
     // Preview mode: always use the app theme passed via prop (no localStorage)
@@ -140,7 +212,7 @@ export function ChatWidget(
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
-      text: text || (image ? "I've attached a photo. Can you help?" : ""),
+      text: text || (image ? t("attachedPhotoPrompt") : ""),
       imageDataUrl: image?.dataUrl,
       time: new Date(),
     };
@@ -149,11 +221,14 @@ export function ChatWidget(
     setTimeout(scrollToBottom, 50);
 
     try {
-      const body = mode === "preview" ? { sessionId, message: userMsg.text } : {
-        businessId,
-        message: userMsg.text,
-        ...(convId ? { conversationId: convId } : {}),
-      };
+      const body = mode === "preview"
+        ? { sessionId, message: userMsg.text, language: activeLocale }
+        : {
+          businessId,
+          message: userMsg.text,
+          language: activeLocale,
+          ...(convId ? { conversationId: convId } : {}),
+        };
 
       const endpoint = mode === "preview"
         ? "/api/intake/preview-chat"
@@ -192,7 +267,7 @@ export function ChatWidget(
         {
           id: assistantMessageId,
           role: "assistant",
-          text: "Sorry, something went wrong. Please try again.",
+          text: t("requestFailed"),
           time: new Date(),
         },
       ]);
@@ -207,6 +282,8 @@ export function ChatWidget(
     sessionId,
     businessId,
     convId,
+    activeLocale,
+    t,
     scrollToBottom,
   ]);
 
@@ -238,11 +315,14 @@ export function ChatWidget(
     setTimeout(scrollToBottom, 50);
 
     try {
-      const body = mode === "preview" ? { sessionId, message: question } : {
-        businessId,
-        message: question,
-        ...(convId ? { conversationId: convId } : {}),
-      };
+      const body = mode === "preview"
+        ? { sessionId, message: question, language: activeLocale }
+        : {
+          businessId,
+          message: question,
+          language: activeLocale,
+          ...(convId ? { conversationId: convId } : {}),
+        };
 
       const endpoint = mode === "preview"
         ? "/api/intake/preview-chat"
@@ -281,7 +361,7 @@ export function ChatWidget(
         {
           id: assistantMessageId,
           role: "assistant",
-          text: "Sorry, something went wrong. Please try again.",
+          text: t("requestFailed"),
           time: new Date(),
         },
       ]);
@@ -293,6 +373,8 @@ export function ChatWidget(
     sessionId,
     businessId,
     convId,
+    activeLocale,
+    t,
     scrollToBottom,
   ]);
 
@@ -312,7 +394,7 @@ export function ChatWidget(
             <div>
               <div className={styles.businessName}>{businessName}</div>
               <div className={styles.businessTagline}>
-                {mode === "preview" ? "Preview Mode" : "AI front desk"}
+                {mode === "preview" ? t("previewMode") : t("aiFrontDesk")}
               </div>
             </div>
           </div>
@@ -332,7 +414,7 @@ export function ChatWidget(
         <div className={styles.messagesArea}>
           {messages.length === 0 && (
             <div className={styles.emptyState}>
-              <p>Hi! How can I help you today?</p>
+              <p>{t("emptyGreeting")}</p>
               {showExampleQuestions && exampleQuestions &&
                 exampleQuestions.length > 0 && (
                 <div className={styles.exampleQuestions}>
@@ -371,7 +453,7 @@ export function ChatWidget(
                   {msg.imageDataUrl && (
                     <img
                       src={msg.imageDataUrl}
-                      alt="Attached"
+                      alt={t("attachedAlt")}
                       className={styles.messageImage}
                     />
                   )}
@@ -433,7 +515,7 @@ export function ChatWidget(
           <div className={styles.imagePreviewArea}>
             <img
               src={pendingImage.dataUrl}
-              alt="Pending"
+              alt={t("pendingAlt")}
               className={styles.imagePreview}
             />
             <Button
@@ -454,7 +536,7 @@ export function ChatWidget(
             <Button
               className={styles.attachBtn}
               onClick={() => fileRef.current?.click()}
-              aria-label="Attach image"
+              aria-label={t("attachAria")}
               type="button"
               variant="ghost"
               size="icon-sm"
@@ -472,7 +554,7 @@ export function ChatWidget(
                   handleSend();
                 }
               }}
-              placeholder={`Message ${businessName}…`}
+              placeholder={t("messagePlaceholder", { businessName })}
             />
             <Button
               className={`${styles.sendBtn} ${
@@ -482,14 +564,14 @@ export function ChatWidget(
               }`}
               onClick={handleSend}
               disabled={(!input.trim() && !pendingImage) || sending}
-              aria-label="Send"
+              aria-label={t("sendAria")}
               type="button"
             >
               ↑
             </Button>
           </div>
           <p className={styles.poweredBy}>
-            powered by{" "}
+            {t("poweredBy")}{"  "}
             <a href="https://wrenlo.app" target="_blank" rel="noreferrer">
               wrenlo
             </a>

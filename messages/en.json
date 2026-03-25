@@ -1,1 +1,200 @@
-{}
+{
+	"common": {
+		"themeToggle": {
+			"ariaLabel": "Toggle theme",
+			"switchToLight": "Switch to light mode",
+			"switchToDark": "Switch to dark mode"
+		},
+		"localeToggle": {
+			"ariaLabel": "Switch language",
+			"switching": "Switching language",
+			"switchTo": "Switch to {locale}"
+		}
+	},
+	"landing": {
+		"logoAlt": "wrenlo",
+		"tagline": "An AI front desk that knows your business, handles customers, and sends you the leads that matter.",
+		"getStarted": "Get started",
+		"comingSoon": "Coming soon"
+	},
+	"auth": {
+		"signIn": {
+			"logoAlt": "Wrenlo"
+		},
+		"signUp": {
+			"logoAlt": "Wrenlo",
+			"respondTitle": "Respond 24/7",
+			"respondBody": "Your AI front desk replies instantly so prospects never wait for business hours.",
+			"leadsTitle": "Capture better leads",
+			"leadsBody": "Wrenlo gathers context, lead intent, and contact details during real conversations.",
+			"controlTitle": "Stay in control",
+			"controlBody": "Jump into any thread, take over, and hand conversations back to AI whenever you want.",
+			"launchTitle": "Launch fast",
+			"launchBody": "Connect your business URL, preview your assistant, then go live in minutes."
+		}
+	},
+	"setup": {
+		"header": {
+			"dashboard": "Dashboard"
+		},
+		"errors": {
+			"enterOneUrl": "Enter at least one URL",
+			"analysisFailed": "Analysis failed",
+			"refineFailed": "Refine failed",
+			"goLiveFailed": "Go live failed"
+		},
+		"preview": {
+			"placeholder": "Your AI front desk preview will appear here",
+			"chatPreviewTitle": "Chat preview",
+			"languageLabel": "Preview language",
+			"english": "English",
+			"spanish": "Spanish"
+		},
+		"urlAnalyzer": {
+			"editTitle": "Edit your AI front desk",
+			"createTitle": "Set up your AI front desk",
+			"editDescription": "Refine your AI or analyze new URLs to update it.",
+			"createDescription": "Paste your business URL and we'll build your AI from it.",
+			"firstUrlPlaceholder": "https://yourbusiness.com",
+			"additionalUrlPlaceholder": "https://another-page.com",
+			"addAnother": "+ Add another URL",
+			"analyzing": "Analyzing...",
+			"reanalyzeFromUrls": "Re-analyze from URLs",
+			"reanalyze": "Re-analyze",
+			"analyzeBusiness": "Analyze My Business"
+		},
+		"refine": {
+			"title": "Refine your AI",
+			"description": "Chat with the preview, then tell it what to change.",
+			"placeholder": "e.g., Make it more casual, add pricing, don't mention competitors...",
+			"refining": "...",
+			"refine": "Refine"
+		},
+		"goLive": {
+			"saveChangesTitle": "Save changes",
+			"goLiveTitle": "Go live",
+			"businessName": "Business name",
+			"businessNamePlaceholder": "Your Business Name",
+			"yourName": "Your name",
+			"email": "Email",
+			"optional": "Optional",
+			"saving": "Saving...",
+			"goingLive": "Going live...",
+			"saveChanges": "Save Changes",
+			"goLive": "Go Live"
+		},
+		"extracted": {
+			"fallbackBusiness": "Business info",
+			"badge": "Extracted",
+			"hideDetails": "Hide details",
+			"showDetails": "Show details",
+			"type": "Type:",
+			"services": "Services:",
+			"hours": "Hours:",
+			"phone": "Phone:",
+			"location": "Location:",
+			"tone": "Tone:"
+		},
+		"success": {
+			"savedTitle": "Changes saved!",
+			"liveTitle": "You're live!",
+			"description": "Your AI front desk is ready. Share the widget link or embed it on your site.",
+			"widgetUrl": "Widget URL",
+			"dashboard": "Dashboard",
+			"goToDashboard": "Go to Dashboard"
+		}
+	},
+	"widget": {
+		"attachedPhotoPrompt": "I've attached a photo. Can you help?",
+		"requestFailed": "Sorry, something went wrong. Please try again.",
+		"previewMode": "Preview Mode",
+		"aiFrontDesk": "AI front desk",
+		"emptyGreeting": "Hi! How can I help you today?",
+		"attachedAlt": "Attached",
+		"pendingAlt": "Pending",
+		"attachAria": "Attach image",
+		"messagePlaceholder": "Message {businessName}...",
+		"sendAria": "Send",
+		"poweredBy": "powered by"
+	},
+	"dashboard": {
+		"ownerDashboard": "Owner dashboard",
+		"setup": "Setup",
+		"releaseConfirm": "Release back to AI?",
+		"ownerFallback": "Owner",
+		"time": {
+			"justNow": "just now",
+			"minutesAgo": "{value}m ago",
+			"hoursAgo": "{value}h ago",
+			"yesterday": "Yesterday"
+		},
+		"customer": {
+			"anonymous": "Anonymous"
+		},
+		"status": {
+			"active": "Active",
+			"claimed": "Claimed",
+			"closed": "Closed",
+			"resolved": "Resolved"
+		},
+		"summary": {
+			"activeThreads": "Active threads",
+			"hotLeads": "Hot leads",
+			"startedToday": "Started today",
+			"totalTracked": "Total tracked",
+			"scoreChip": "score {value}+",
+			"todayChip": "today",
+			"allTimeChip": "all time",
+			"liveChip": "{value} live",
+			"activeNone": "No active threads right now",
+			"activeOne": "1 thread currently in progress",
+			"activeMany": "{value} threads currently in progress",
+			"claimedNone": "No active thread is currently claimed",
+			"claimedOne": "1 active thread is currently claimed",
+			"claimedMany": "{value} active threads are currently claimed",
+			"hotNone": "No hot leads above the threshold",
+			"hotOne": "1 conversation needs attention",
+			"hotMany": "{value} conversations need attention",
+			"highestNone": "No lead score recorded yet",
+			"highestValue": "Highest lead score is {value}",
+			"todayNone": "No new conversations started today",
+			"todayOne": "1 conversation started today",
+			"todayMany": "{value} conversations started today",
+			"todayBased": "Based on conversation start time",
+			"totalOne": "1 tracked conversation in the inbox",
+			"totalMany": "{value} tracked conversations in the inbox",
+			"totalDescription": "Active, claimed, and closed threads"
+		},
+		"mobile": {
+			"active": "active",
+			"hot": "hot",
+			"today": "today",
+			"total": "total"
+		},
+		"command": {
+			"title": "Conversation command center",
+			"openThreads": "{value} open threads",
+			"description": "Monitor active leads, jump into live threads, and hand control back to wrenlo when you are done.",
+			"activeNow": "Active now",
+			"claimedNow": "Claimed now",
+			"highestLeadScore": "Highest lead score"
+		},
+		"conversations": {
+			"title": "Conversations",
+			"pickThread": "Pick a thread to review",
+			"none": "No conversations yet.",
+			"ready": "Your wrenlo assistant is ready!",
+			"noMessages": "No messages yet"
+		},
+		"detail": {
+			"liveConversation": "Live conversation",
+			"assistantName": "wrenlo",
+			"ownerBadge": "Owner",
+			"takeOver": "Take Over Conversation",
+			"messagePlaceholder": "Message...",
+			"release": "Release back to AI",
+			"selectTitle": "Select a conversation",
+			"selectDescription": "Choose a thread from the left to inspect messages or take over."
+		}
+	}
+}

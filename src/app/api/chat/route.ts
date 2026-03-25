@@ -1,16 +1,16 @@
 import {
-  addMessage,
-  createConversation,
-  getBusinessById,
-  getConversationById,
-  getConversationMessages,
-  getCustomerById,
-  getOrCreateCustomer,
-  incrementCustomerConversationCount,
-  markConversationNotified,
-  touchConversation,
-  touchCustomerLastSeen,
-  updateConversationLeadScore,
+    addMessage,
+    createConversation,
+    getBusinessById,
+    getConversationById,
+    getConversationMessages,
+    getCustomerById,
+    getOrCreateCustomer,
+    incrementCustomerConversationCount,
+    markConversationNotified,
+    touchConversation,
+    touchCustomerLastSeen,
+    updateConversationLeadScore,
 } from '@/services/business';
 import { detectLead } from '@/services/lead-detector';
 import { chatWithFollowups } from '@/services/llm';
@@ -19,6 +19,14 @@ import type { Conversation, Customer, Message } from '@/types';
 import { type NextRequest, NextResponse } from 'next/server';
 
 const MAX_HISTORY = 40;
+const SUPPORTED_LANGUAGES = new Set(['en', 'es']);
+
+function getLanguage(value: unknown): 'en' | 'es' {
+  if (typeof value === 'string' && SUPPORTED_LANGUAGES.has(value)) {
+    return value as 'en' | 'es';
+  }
+  return 'en';
+}
 
 function buildSystemPrompt(base: string, customer: Customer | null): string {
   if (!customer || customer.conversationCount === 0) return base;
@@ -49,7 +57,9 @@ export async function POST(req: NextRequest) {
     customerId,
     customerIdentifier,
     channel = 'web',
+    language,
   } = body;
+  const selectedLanguage = getLanguage(language);
 
   if (!businessId || !message) {
     return NextResponse.json(
@@ -115,9 +125,12 @@ export async function POST(req: NextRequest) {
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-  const systemPrompt = buildSystemPrompt(business.systemPrompt, customer);
+  const basePrompt = selectedLanguage === 'es'
+    ? business.systemPromptEs
+    : business.systemPrompt;
+  const systemPrompt = buildSystemPrompt(basePrompt, customer);
   const { response: assistantResponse, followUpQuestions } =
-    await chatWithFollowups(systemPrompt, history, message);
+    await chatWithFollowups(systemPrompt, history, message, 1024, selectedLanguage);
 
   addMessage(conversation.id, 'user', message);
   addMessage(conversation.id, 'assistant', assistantResponse);

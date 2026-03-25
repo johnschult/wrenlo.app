@@ -19,6 +19,7 @@ export interface ChatRequest {
 	customerId?: string;
 	customerIdentifier?: string;
 	channel?: 'web' | 'sms' | 'voice';
+	language?: 'en' | 'es';
 }
 
 export interface ChatResponse {
@@ -87,7 +88,9 @@ export interface AnalystSession {
 	sessionId: string;
 	extractedData: ExtractedBusinessData;
 	systemPrompt: string;
+	systemPromptEs: string;
 	exampleQuestions: string[];
+	exampleQuestionsEs: string[];
 	refinementHistory: string[];
 	previewMessages: Message[];
 	businessId?: string;

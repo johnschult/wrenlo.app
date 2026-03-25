@@ -2,14 +2,14 @@ import { desc, eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, sqlite } from '../db';
 import {
-  businesses,
-  conversations,
-  customers,
-  messages,
-  type Business,
-  type Conversation,
-  type Customer,
-  type DbMessage,
+    businesses,
+    conversations,
+    customers,
+    messages,
+    type Business,
+    type Conversation,
+    type Customer,
+    type DbMessage,
 } from '../db/schema';
 
 // ── Businesses ────────────────────────────────────────────────────────────────
@@ -31,15 +31,27 @@ export function upsertBusiness(
   id: string,
   name: string,
   systemPrompt: string,
-  opts?: { clerkUserId?: string; ownerName?: string; ownerEmail?: string; exampleQuestions?: string[] }
+  systemPromptEs: string,
+  opts?: {
+    clerkUserId?: string;
+    ownerName?: string;
+    ownerEmail?: string;
+    exampleQuestions?: string[];
+    exampleQuestionsEs?: string[];
+  }
 ): Business {
   const exampleQuestionsJson = opts?.exampleQuestions ? JSON.stringify(opts.exampleQuestions) : '[]';
+  const exampleQuestionsEsJson = opts?.exampleQuestionsEs
+    ? JSON.stringify(opts.exampleQuestionsEs)
+    : '[]';
   db.insert(businesses)
     .values({
       id,
       name,
       systemPrompt,
+      systemPromptEs,
       exampleQuestions: exampleQuestionsJson,
+      exampleQuestionsEs: exampleQuestionsEsJson,
       clerkUserId: opts?.clerkUserId ?? null,
       ownerName: opts?.ownerName ?? null,
       ownerNotificationEmail: opts?.ownerEmail ?? null,
@@ -49,7 +61,9 @@ export function upsertBusiness(
       set: {
         name,
         systemPrompt,
+        systemPromptEs,
         exampleQuestions: exampleQuestionsJson,
+        exampleQuestionsEs: exampleQuestionsEsJson,
         clerkUserId: opts?.clerkUserId,
         ownerName: opts?.ownerName,
         ownerNotificationEmail: opts?.ownerEmail,

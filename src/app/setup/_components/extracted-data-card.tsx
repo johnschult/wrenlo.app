@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/collapsible";
 import type { ExtractedBusinessData } from "@/types";
 import { ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 interface ExtractedDataCardProps {
@@ -17,6 +18,7 @@ interface ExtractedDataCardProps {
 
 export function ExtractedDataCard({ extracted }: ExtractedDataCardProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const t = useTranslations("setup.extracted");
 
   return (
     <section>
@@ -25,16 +27,16 @@ export function ExtractedDataCard({ extracted }: ExtractedDataCardProps) {
           <CollapsibleTrigger asChild>
             <button
               type="button"
-              className="flex w-full items-center justify-between gap-3 px-4 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             >
               <div className="min-w-0">
                 <CardTitle className="text-sm">
-                  {extracted.businessName || "Business info"}
+                  {extracted.businessName || t("fallbackBusiness")}
                 </CardTitle>
               </div>
               <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-                <Badge variant="secondary">Extracted</Badge>
-                <span>{isOpen ? "Hide details" : "Show details"}</span>
+                <Badge variant="secondary">{t("badge")}</Badge>
+                <span>{isOpen ? t("hideDetails") : t("showDetails")}</span>
                 <ChevronDown
                   aria-hidden="true"
                   className={`size-4 transition-transform ${
@@ -48,13 +50,13 @@ export function ExtractedDataCard({ extracted }: ExtractedDataCardProps) {
             <CardContent className="max-h-64 space-y-1.5 overflow-y-auto pb-4 pt-3 pr-1 text-sm text-muted-foreground">
               {extracted.businessType && (
                 <p>
-                  <span className="text-foreground">Type:</span>{" "}
+                  <span className="text-foreground">{t("type")}</span>{" "}
                   {extracted.businessType}
                 </p>
               )}
               {extracted.services?.length > 0 && (
                 <p>
-                  <span className="text-foreground">Services:</span>{" "}
+                  <span className="text-foreground">{t("services")}</span>{" "}
                   {extracted.services
                     .map((s) => `${s.name}${s.price ? ` — ${s.price}` : ""}`)
                     .join(", ")}
@@ -62,25 +64,25 @@ export function ExtractedDataCard({ extracted }: ExtractedDataCardProps) {
               )}
               {extracted.hours && (
                 <p>
-                  <span className="text-foreground">Hours:</span>{" "}
+                  <span className="text-foreground">{t("hours")}</span>{" "}
                   {extracted.hours}
                 </p>
               )}
               {extracted.phone && (
                 <p>
-                  <span className="text-foreground">Phone:</span>{" "}
+                  <span className="text-foreground">{t("phone")}</span>{" "}
                   {extracted.phone}
                 </p>
               )}
               {extracted.location && (
                 <p>
-                  <span className="text-foreground">Location:</span>{" "}
+                  <span className="text-foreground">{t("location")}</span>{" "}
                   {extracted.location}
                 </p>
               )}
               {extracted.tone && (
                 <p>
-                  <span className="text-foreground">Tone:</span>{" "}
+                  <span className="text-foreground">{t("tone")}</span>{" "}
                   {extracted.tone}
                 </p>
               )}

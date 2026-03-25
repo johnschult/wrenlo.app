@@ -6,10 +6,12 @@ import {
   refinePromptAction,
 } from "@/actions/intake";
 import { Button } from "@/components/ui/button";
+import { LocaleToggle } from "@/lib/locale";
 import { ThemeToggle, useTheme } from "@/lib/theme";
 import type { ExtractedBusinessData } from "@/types";
 import { UserButton } from "@clerk/nextjs";
 import { Gauge } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -32,6 +34,8 @@ type Step = "url" | "ready" | "success";
 
 export default function SetupClient({ existingBusinessId, initial }: Props) {
   const { theme } = useTheme();
+  const locale = useLocale() as "en" | "es";
+  const t = useTranslations("setup");
   const [urls, setUrls] = useState([{ id: crypto.randomUUID(), value: "" }]);
   const [step, setStep] = useState<Step>(initial ? "ready" : "url");
   const [sessionId, setSessionId] = useState(initial?.sessionId ?? "");
@@ -49,6 +53,7 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
   const [goingLive, setGoingLive] = useState(false);
   const [error, setError] = useState("");
   const [previewKey, setPreviewKey] = useState(0);
+  const [previewLocale, setPreviewLocale] = useState<"en" | "es">(locale);
 
   const clerkAppearance = {
     variables: {
@@ -73,19 +78,19 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
   const handleAnalyze = async () => {
     const valid = urls.map((u) => u.value.trim()).filter(Boolean);
     if (!valid.length) {
-      setError("Enter at least one URL");
+      setError(t("errors.enterOneUrl"));
       return;
     }
     setAnalyzing(true);
     setError("");
     try {
-      const data = await analyzeUrlsAction(valid);
+      const data = await analyzeUrlsAction(valid, locale);
       setSessionId(data.sessionId);
       setExtracted(data.extractedData);
       setBizName(data.extractedData.businessName || "");
       setStep("ready");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Analysis failed");
+      setError(e instanceof Error ? e.message : t("errors.analysisFailed"));
     } finally {
       setAnalyzing(false);
     }
@@ -96,12 +101,12 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
     setRefining(true);
     setError("");
     try {
-      await refinePromptAction(sessionId, feedback.trim());
+      await refinePromptAction(sessionId, feedback.trim(), previewLocale);
       setChips([...chips, feedback.trim()]);
       setFeedback("");
       setPreviewKey((k) => k + 1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Refine failed");
+      setError(e instanceof Error ? e.message : t("errors.refineFailed"));
     } finally {
       setRefining(false);
     }
@@ -122,7 +127,7 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
       setSuccess(data);
       setStep("success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Go live failed");
+      setError(e instanceof Error ? e.message : t("errors.goLiveFailed"));
     } finally {
       setGoingLive(false);
     }
@@ -148,10 +153,11 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
                   className="flex items-center"
                 >
                   <Gauge className="size-4" />
-                  Dashboard
+                  {t("header.dashboard")}
                 </Link>
               </Button>
             )}
+            <LocaleToggle />
             <ThemeToggle />
             <UserButton appearance={clerkAppearance} />
           </nav>
@@ -214,22 +220,58 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
                       className="opacity-40"
                     />
                     <p className="text-sm">
-                      Your AI front desk preview will appear here
+                      {t("preview.placeholder")}
                     </p>
                   </div>
                 )
                 : (
-                  <iframe
-                    key={`${previewKey}-${theme}`}
-                    src={`/w/preview/${sessionId}?name=${
-                      encodeURIComponent(
-                        bizName,
-                      )
-                    }&theme=${theme}`}
-                    className="w-full h-full border-0"
-                    sandbox="allow-scripts allow-same-origin allow-forms"
-                    title="Chat preview"
-                  />
+                  <div className="h-full flex flex-col">
+                    <div className="shrink-0 flex items-center justify-between border-b border-border/60 bg-background/80 px-3 py-2">
+                      <p className="text-xs font-medium text-foreground">
+                        {t("preview.chatPreviewTitle")}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground">
+                          {t("preview.languageLabel")}
+                        </p>
+                        <div className="inline-flex items-center rounded-md border border-border/60 bg-card p-1">
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => setPreviewLocale("en")}
+                            className={previewLocale === "en"
+                              ? "h-6 border border-brand/50 bg-brand/15 px-2 text-brand hover:bg-brand/25"
+                              : "h-6 px-2 text-muted-foreground"}
+                          >
+                            {t("preview.english")}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => setPreviewLocale("es")}
+                            className={previewLocale === "es"
+                              ? "h-6 border border-brand/50 bg-brand/15 px-2 text-brand hover:bg-brand/25"
+                              : "h-6 px-2 text-muted-foreground"}
+                          >
+                            {t("preview.spanish")}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <iframe
+                      key={`${previewKey}-${theme}-${previewLocale}`}
+                      src={`/w/preview/${sessionId}?name=${
+                        encodeURIComponent(
+                          bizName,
+                        )
+                      }&theme=${theme}&locale=${previewLocale}`}
+                      className="w-full h-full border-0"
+                      sandbox="allow-scripts allow-same-origin allow-forms"
+                      title={t("preview.chatPreviewTitle")}
+                    />
+                  </div>
                 )}
             </div>
           </div>

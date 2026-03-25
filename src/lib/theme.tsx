@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createContext, useContext, useEffect, useState } from "react";
 export type Theme = "dark" | "light";
 
@@ -48,14 +49,15 @@ export function useTheme() {
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const t = useTranslations("common.themeToggle");
   return (
     <Button
       onClick={toggleTheme}
       variant="ghost"
       size="icon-sm"
       className="text-muted-foreground hover:text-foreground"
-      aria-label="Toggle theme"
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={t("ariaLabel")}
+      title={theme === "dark" ? t("switchToLight") : t("switchToDark")}
       type="button"
     >
       {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}

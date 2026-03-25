@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { ChevronRight, RotateCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface UrlEntry {
   id: string;
@@ -35,6 +36,7 @@ function UrlFields({
   error,
   buttonLabel,
 }: UrlFieldsProps) {
+  const t = useTranslations("setup.urlAnalyzer");
   return (
     <>
       <div className="space-y-2 mb-3">
@@ -48,8 +50,8 @@ function UrlFields({
               if (e.key === "Enter") onAnalyze();
             }}
             placeholder={i === 0
-              ? "https://yourbusiness.com"
-              : "https://another-page.com"}
+              ? t("firstUrlPlaceholder")
+              : t("additionalUrlPlaceholder")}
             disabled={analyzing}
             className="h-11 bg-card"
           />
@@ -64,7 +66,7 @@ function UrlFields({
           className="mb-3 px-0 text-primary hover:text-primary"
           type="button"
         >
-          + Add another URL
+          {t("addAnother")}
         </Button>
       )}
       {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
@@ -78,7 +80,7 @@ function UrlFields({
           ? (
             <div className="flex items-center justify-center gap-2">
               <RotateCw className="animate-spin" size={16} />
-              Analyzing…
+              {t("analyzing")}
             </div>
           )
           : buttonLabel}
@@ -107,16 +109,15 @@ export function UrlAnalyzer({
   isEdit,
 }: UrlAnalyzerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const t = useTranslations("setup.urlAnalyzer");
 
   return (
     <section>
       <h2 className="text-xl font-bold mb-1">
-        {isEdit ? "Edit your AI front desk" : "Set up your AI front desk"}
+        {isEdit ? t("editTitle") : t("createTitle")}
       </h2>
       <p className="text-muted-foreground text-sm mb-4">
-        {isEdit
-          ? "Refine your AI or analyze new URLs to update it."
-          : "Paste your business URL and we'll build your AI from it."}
+        {isEdit ? t("editDescription") : t("createDescription")}
       </p>
       {isEdit
         ? (
@@ -132,7 +133,7 @@ export function UrlAnalyzer({
                     isOpen ? "rotate-90" : ""
                   }`}
                 />
-                Re-analyze from URLs
+                {t("reanalyzeFromUrls")}
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3">
@@ -143,7 +144,7 @@ export function UrlAnalyzer({
                 onAnalyze={onAnalyze}
                 analyzing={analyzing}
                 error={error}
-                buttonLabel="Re-analyze"
+                buttonLabel={t("reanalyze")}
               />
             </CollapsibleContent>
           </Collapsible>
@@ -156,7 +157,7 @@ export function UrlAnalyzer({
             onAnalyze={onAnalyze}
             analyzing={analyzing}
             error={error}
-            buttonLabel="Analyze My Business"
+            buttonLabel={t("analyzeBusiness")}
           />
         )}
     </section>

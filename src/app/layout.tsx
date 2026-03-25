@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { Geist } from "next/font/google";
 import "./globals.css";
 
@@ -15,9 +16,12 @@ export const metadata: Metadata = {
     "An AI front desk that knows your business, handles customers, and sends you the leads that matter.",
 };
 
-export default function RootLayout(
+export default async function RootLayout(
   { children }: { children: React.ReactNode },
 ) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
     <ClerkProvider
       appearance={{
@@ -25,7 +29,7 @@ export default function RootLayout(
       }}
     >
       <html
-        lang="en"
+        lang={locale}
         suppressHydrationWarning
         className={cn("font-sans", geist.variable)}
       >
@@ -41,7 +45,7 @@ export default function RootLayout(
                 `(function(){try{var t=localStorage.getItem('wrenlo-app-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.classList.add(t);}catch(e){document.documentElement.classList.add('dark');}})()`,
             }}
           />
-          <NextIntlClientProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
             <ThemeProvider>{children}</ThemeProvider>
           </NextIntlClientProvider>
         </body>
