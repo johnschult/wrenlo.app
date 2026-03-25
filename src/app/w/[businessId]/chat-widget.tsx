@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Moon, Sun } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import styles from "./widget.module.css";
 
 interface Message {
@@ -49,39 +51,6 @@ function getLocaleFromSearch(): AppLocale | null {
   if (typeof window === "undefined") return null;
   const searchLocale = new URL(window.location.href).searchParams.get("locale");
   return isSupportedLocale(searchLocale) ? searchLocale : null;
-}
-
-function renderMarkdown(text: string): string {
-  let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(
-    />/g,
-    "&gt;",
-  );
-  html = html.replace(/```[\s\S]*?```/g, (m) => {
-    const code = m.slice(3, -3).replace(/^\n/, "");
-    return `<pre><code>${code}</code></pre>`;
-  });
-  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
-  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
-  html = html.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
-  );
-  html = html.replace(/^[ \t]*[-*+] (.+)$/gm, "<li>$1</li>");
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
-  const parts = html.split(/\n{2,}/);
-  html = parts
-    .map((p) => {
-      const trimmed = p.trim();
-      if (!trimmed) return "";
-      if (trimmed.startsWith("<ul>") || trimmed.startsWith("<pre>")) {
-        return trimmed;
-      }
-      return `<p>${trimmed.replace(/\n/g, "<br>")}</p>`;
-    })
-    .filter(Boolean)
-    .join("\n");
-  return html;
 }
 
 export function ChatWidget(
@@ -465,12 +434,22 @@ export function ChatWidget(
                   )}
                   {msg.role === "assistant"
                     ? (
-                      <div
-                        // biome-ignore lint/security/noDangerouslySetInnerHtml: This is safe because the content is sanitized Markdown
-                        dangerouslySetInnerHTML={{
-                          __html: renderMarkdown(msg.text),
-                        }}
-                      />
+                      <div className={styles.markdownContent}>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            a: (props) => (
+                              <a
+                                {...props}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              />
+                            ),
+                          }}
+                        >
+                          {msg.text}
+                        </ReactMarkdown>
+                      </div>
                     )
                     : <p>{msg.text}</p>}
                 </div>

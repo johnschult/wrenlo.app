@@ -1,16 +1,16 @@
 import {
-    addMessage,
-    createConversation,
-    getBusinessById,
-    getConversationById,
-    getConversationMessages,
-    getCustomerById,
-    getOrCreateCustomer,
-    incrementCustomerConversationCount,
-    markConversationNotified,
-    touchConversation,
-    touchCustomerLastSeen,
-    updateConversationLeadScore,
+  addMessage,
+  createConversation,
+  getBusinessById,
+  getConversationById,
+  getConversationMessages,
+  getCustomerById,
+  getOrCreateCustomer,
+  incrementCustomerConversationCount,
+  markConversationNotified,
+  touchConversation,
+  touchCustomerLastSeen,
+  updateConversationLeadScore,
 } from '@/services/business';
 import { detectLead } from '@/services/lead-detector';
 import { chatWithFollowups } from '@/services/llm';

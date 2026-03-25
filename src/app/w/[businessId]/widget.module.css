@@ -229,29 +229,111 @@
 .messageContent p:last-child {
 	margin-bottom: 0;
 }
-.messageContent ul {
+
+.markdownContent {
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.markdownContent > *:first-child {
+	margin-top: 0;
+}
+
+.markdownContent > *:last-child {
+	margin-bottom: 0;
+}
+
+.markdownContent p {
+	margin: 0 0 6px;
+}
+
+.markdownContent ul,
+.markdownContent ol {
 	margin: 4px 0;
 	padding-left: 20px;
 }
-.messageContent strong {
+
+.markdownContent li + li {
+	margin-top: 3px;
+}
+
+.markdownContent strong {
 	font-weight: 600;
 }
-.messageContent a {
+
+.markdownContent a {
 	color: var(--accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
 }
-.messageContent pre {
-	background: rgba(0, 0, 0, 0.1);
-	border-radius: 6px;
+
+.markdownContent hr {
+	border: 0;
+	height: 1px;
+	background: var(--border);
+	margin: 10px 0;
+}
+
+.markdownContent h1,
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4 {
+	font-size: 1em;
+	font-weight: 700;
+	margin: 8px 0 4px;
+}
+
+.markdownContent pre {
+	background: rgba(0, 0, 0, 0.12);
+	border-radius: 8px;
 	padding: 8px 10px;
 	overflow-x: auto;
 	font-size: 13px;
-	margin: 4px 0;
+	margin: 6px 0;
 }
-.messageContent code {
+
+.markdownContent pre code {
+	background: transparent;
+	padding: 0;
+	border-radius: 0;
+}
+
+.markdownContent code {
 	background: rgba(0, 0, 0, 0.1);
 	border-radius: 4px;
 	padding: 1px 4px;
 	font-size: 13px;
+}
+
+.markdownContent table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 8px 0;
+	font-size: 13px;
+	display: block;
+	overflow-x: auto;
+	max-width: 100%;
+	white-space: nowrap;
+	-webkit-overflow-scrolling: touch;
+}
+
+.markdownContent thead {
+	background: rgba(0, 0, 0, 0.08);
+}
+
+.markdownContent th,
+.markdownContent td {
+	padding: 6px 8px;
+	text-align: left;
+	border-bottom: 1px solid var(--border);
+}
+
+.markdownContent blockquote {
+	margin: 8px 0;
+	padding: 4px 10px;
+	border-left: 3px solid var(--border-input);
+	color: var(--text-secondary);
 }
 
 .messageTime {
