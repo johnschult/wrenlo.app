@@ -21,6 +21,7 @@ interface Message {
   imageDataUrl?: string;
   time: Date;
   followUpQuestions?: string[];
+  answerOptions?: string[];
 }
 
 interface Props {
@@ -231,6 +232,7 @@ export function ChatWidget(
           text: data.response,
           time: new Date(),
           followUpQuestions: data.followUpQuestions,
+          answerOptions: data.answerOptions,
         },
       ]);
     } catch {
@@ -325,6 +327,7 @@ export function ChatWidget(
           text: data.response,
           time: new Date(),
           followUpQuestions: data.followUpQuestions,
+          answerOptions: data.answerOptions,
         },
       ]);
     } catch {
@@ -460,7 +463,26 @@ export function ChatWidget(
                   })}
                 </span>
               </div>
-              {msg.role === "assistant" && msg.followUpQuestions &&
+              {msg.role === "assistant" && msg.answerOptions &&
+                msg.answerOptions.length > 0 && (
+                <div className={styles.answerOptions}>
+                  {msg.answerOptions.map((option) => (
+                    <Button
+                      key={`${msg.id}-ao-${option}`}
+                      onClick={() => handleExampleQuestionClick(option)}
+                      variant="outline"
+                      size="sm"
+                      className={styles.answerOptionBtn}
+                      type="button"
+                    >
+                      {option}
+                    </Button>
+                  ))}
+                </div>
+              )}
+              {msg.role === "assistant" && (!msg.answerOptions ||
+                msg.answerOptions.length === 0) &&
+                msg.followUpQuestions &&
                 msg.followUpQuestions.length > 0 && (
                 <div className={styles.followUpQuestions}>
                   {msg.followUpQuestions.map((question) => (

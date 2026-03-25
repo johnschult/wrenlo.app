@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   const promptWithVoice = `${prompt}\n\n[${getVoiceInstruction(selectedLanguage)}]`;
 
   const history: Message[] = session.previewMessages.slice(-20);
-  const { response, followUpQuestions } = await chatWithFollowups(
+  const { response, followUpQuestions, answerOptions } = await chatWithFollowups(
     promptWithVoice,
     history,
     message,
@@ -75,5 +75,5 @@ export async function POST(req: NextRequest) {
     { role: 'assistant', content: response }
   );
 
-  return NextResponse.json({ response, conversationId: sessionId, followUpQuestions });
+  return NextResponse.json({ response, conversationId: sessionId, followUpQuestions, answerOptions });
 }

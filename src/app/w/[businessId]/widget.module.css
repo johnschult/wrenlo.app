@@ -534,3 +534,38 @@
 .followUpQuestionBtn:active {
 	opacity: 0.8;
 }
+
+/* ── Answer Options (inline question answers) ───────── */
+.answerOptions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 12px;
+	width: 100%;
+	max-width: 320px;
+}
+
+.answerOptionBtn {
+	text-align: left;
+	white-space: normal;
+	word-wrap: break-word;
+	height: auto;
+	padding: 8px 14px;
+	border: 1.5px solid var(--accent);
+	background: var(--bg-asst);
+	color: var(--text);
+	border-radius: 16px;
+	font-size: 13px;
+	line-height: 1.4;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+
+.answerOptionBtn:hover {
+	background: var(--accent);
+	color: #fff;
+}
+
+.answerOptionBtn:active {
+	opacity: 0.85;
+}

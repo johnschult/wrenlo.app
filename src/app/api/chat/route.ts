@@ -1,16 +1,16 @@
 import {
-  addMessage,
-  createConversation,
-  getBusinessById,
-  getConversationById,
-  getConversationMessages,
-  getCustomerById,
-  getOrCreateCustomer,
-  incrementCustomerConversationCount,
-  markConversationNotified,
-  touchConversation,
-  touchCustomerLastSeen,
-  updateConversationLeadScore,
+    addMessage,
+    createConversation,
+    getBusinessById,
+    getConversationById,
+    getConversationMessages,
+    getCustomerById,
+    getOrCreateCustomer,
+    incrementCustomerConversationCount,
+    markConversationNotified,
+    touchConversation,
+    touchCustomerLastSeen,
+    updateConversationLeadScore,
 } from '@/services/business';
 import { detectLead } from '@/services/lead-detector';
 import { chatWithFollowups } from '@/services/llm';
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
     ? business.systemPromptEs
     : business.systemPrompt;
   const systemPrompt = buildSystemPrompt(basePrompt, customer, selectedLanguage);
-  const { response: assistantResponse, followUpQuestions } =
+  const { response: assistantResponse, followUpQuestions, answerOptions } =
     await chatWithFollowups(
       systemPrompt,
       history,
@@ -216,5 +216,6 @@ export async function POST(req: NextRequest) {
     status: conversation.status,
     handedOff: false,
     followUpQuestions,
+    answerOptions,
   });
 }

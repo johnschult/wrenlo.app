@@ -33,6 +33,7 @@ export interface ChatResponse {
 	status: ConversationStatus;
 	handedOff: boolean;
 	followUpQuestions?: string[];
+	answerOptions?: string[];
 }
 
 export interface OwnerNotification {

@@ -123,13 +123,27 @@ export async function chatWithFollowups(
 	maxTokens = 1024,
 	language?: SupportedLanguage,
 	image?: ImagePayload,
-): Promise<{ response: string; followUpQuestions: string[] }> {
+): Promise<{
+	response: string;
+	followUpQuestions: string[];
+	answerOptions: string[];
+}> {
 	const followupPrompt = `${withLanguageInstruction(systemPrompt, language)}
 
-**IMPORTANT: Generate Follow-up Questions**
-After providing your response, provide 2-3 follow-up questions that the user might want to ask next.
-Format them as a JSON array immediately after your response.
-Format: FOLLOW_UP_QUESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
+**IMPORTANT: Structured reply metadata**
+After your response, append ONE of the following blocks (never both):
+
+Option A — ANSWER_OPTIONS: Use this when your response asks the customer a specific question
+(e.g. "How often do you drive?", "Which service interests you?", "What type of vehicle?").
+Provide 2-4 short answer choices the customer can pick from.
+Format: ANSWER_OPTIONS: ["Under 10k miles/year", "10k–20k miles/year", "Over 20k miles/year"]
+The answers must directly answer the question you asked. Keep each answer under 8 words.
+
+Option B — FOLLOW_UP_QUESTIONS: Use this only when your response does NOT ask a specific question.
+Provide 2-3 topics the customer might want to explore next.
+Format: FOLLOW_UP_QUESTIONS: ["Question 1?", "Question 2?", "Question 3?"]
+
+Always prefer ANSWER_OPTIONS when your response contains a question directed at the customer.`;
 
 	const messages: Anthropic.MessageParam[] = [
 		...history.map(m => ({ role: m.role, content: m.content })),
@@ -150,16 +164,33 @@ Format: FOLLOW_UP_QUESTIONS: ["Question 1?", "Question 2?", "Question 3?"]`;
 	const fullText = textBlock.text;
 	let responseText = fullText;
 	let followUpQuestions: string[] = [];
+	let answerOptions: string[] = [];
 
-	const followupMatch = fullText.match(/FOLLOW_UP_QUESTIONS:\s*(\[[\s\S]*?\])/);
-	if (followupMatch) {
+	// Try ANSWER_OPTIONS first
+	const answerMatch = fullText.match(/ANSWER_OPTIONS:\s*(\[[\s\S]*?\])/);
+	if (answerMatch) {
 		try {
-			responseText = fullText.slice(0, followupMatch.index).trim();
-			followUpQuestions = JSON.parse(followupMatch[1]);
+			responseText = fullText.slice(0, answerMatch.index).trim();
+			answerOptions = JSON.parse(answerMatch[1]);
 		} catch {
 			responseText = fullText;
 		}
 	}
 
-	return { response: responseText, followUpQuestions };
+	// Fall back to FOLLOW_UP_QUESTIONS if no answer options
+	if (answerOptions.length === 0) {
+		const followupMatch = responseText.match(
+			/FOLLOW_UP_QUESTIONS:\s*(\[[\s\S]*?\])/,
+		);
+		if (followupMatch) {
+			try {
+				responseText = responseText.slice(0, followupMatch.index).trim();
+				followUpQuestions = JSON.parse(followupMatch[1]);
+			} catch {
+				responseText = fullText;
+			}
+		}
+	}
+
+	return { response: responseText, followUpQuestions, answerOptions };
 }
