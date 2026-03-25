@@ -1,6 +1,6 @@
 # wrenlo
 
-An SMB AI receptionist platform built with Fastify, TypeScript, SQLite, and Claude. wrenlo handles inbound customer conversations, scores leads, and lets business owners monitor and take over chats in real time — all from a responsive dashboard.
+An AI front desk platform for small businesses, built with Fastify, TypeScript, SQLite, and Claude. wrenlo handles inbound customer conversations, scores leads, and lets business owners monitor and take over chats in real time — all from a responsive dashboard.
 
 Live at [wrenlo.app](https://wrenlo.app)
 

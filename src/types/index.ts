@@ -1,50 +1,12 @@
+// Re-export Drizzle inferred types as the canonical row types
+export type {
+  Business,
+  Customer,
+  Conversation,
+  DbMessage,
+} from '../db/schema';
+
 export type ConversationStatus = 'active' | 'closed' | 'handed_off' | 'resolved';
-
-export interface Business {
-  id: string;
-  name: string;
-  system_prompt: string;
-  owner_name: string | null;
-  owner_notification_webhook: string | null;
-  owner_notification_email: string | null;
-  handoff_keywords: string; // JSON-serialized string[]
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Customer {
-  id: string;
-  business_id: string;
-  identifier: string;
-  name: string | null;
-  vehicle_info: string | null;
-  notes: string | null;
-  first_seen_at: string;
-  last_seen_at: string;
-  conversation_count: number;
-}
-
-export interface Conversation {
-  id: string;
-  business_id: string;
-  customer_id: string | null;
-  channel: 'web' | 'sms' | 'voice';
-  started_at: string;
-  updated_at: string;
-  status: ConversationStatus;
-  claimed_by: string | null;
-  claimed_at: string | null;
-  lead_score: number;
-  notified_at: string | null;
-}
-
-export interface DbMessage {
-  id: string;
-  conversation_id: string;
-  role: 'user' | 'assistant' | 'system' | 'owner';
-  content: string;
-  created_at: string;
-}
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -103,44 +65,30 @@ export interface OwnerMessageRequest {
   senderName?: string;
 }
 
-// ── Intake Pipeline ────────────────────────────────────────────────────────────
+// ── Analyst Pipeline ──────────────────────────────────────────────────────────
 
-export interface IntakeQuestion {
-  id: string;
-  question: string;
-  hint?: string;
-}
-
-export interface IntakeResponse {
-  questionId: string;
-  question: string;
-  answer: string;
-}
-
-export interface IntakeSession {
-  sessionId: string;
+export interface ExtractedBusinessData {
+  businessName: string;
   businessType: string;
-  questions: IntakeQuestion[];
-  createdAt: string;
+  services: Array<{ name: string; price: string | null }>;
+  hours: string | null;
+  bookingMethod: string | null;
+  location: string | null;
+  phone: string | null;
+  email: string | null;
+  tone: string | null;
+  commonQuestions: string[];
+  specialFeatures: string[];
+  aboutText: string | null;
+  sourceUrls: string[];
 }
 
-export interface IntakeStartRequest {
-  businessType: string;
-}
-
-export interface IntakeStartResponse {
+export interface AnalystSession {
   sessionId: string;
-  questions: IntakeQuestion[];
-}
-
-export interface IntakeCompleteRequest {
-  sessionId: string;
-  responses: Array<{ questionId: string; answer: string }>;
-  businessId?: string;
-  businessName?: string;
-}
-
-export interface IntakeCompleteResponse {
+  extractedData: ExtractedBusinessData;
   systemPrompt: string;
+  refinementHistory: string[];
+  previewMessages: Message[];
   businessId?: string;
+  createdAt: string;
 }

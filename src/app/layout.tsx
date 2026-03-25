@@ -1,0 +1,40 @@
+import { ThemeProvider } from "@/src/lib/theme";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/ui/themes";
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "wrenlo — AI front desk for small businesses",
+  description:
+    "An AI front desk that knows your business, handles customers, and sends you the leads that matter.",
+};
+
+export default function RootLayout(
+  { children }: { children: React.ReactNode },
+) {
+  return (
+    <ClerkProvider
+      appearance={{
+        theme: dark,
+      }}
+    >
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className="antialiased"
+          style={{ background: "var(--bg)", color: "var(--text)" }}
+        >
+          {/* Prevent flash of wrong theme before React hydrates */}
+          <script
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: This is necessary to set the initial theme before React hydration to prevent a flash of the wrong theme.
+            dangerouslySetInnerHTML={{
+              __html:
+                `(function(){try{var t=localStorage.getItem('wrenlo-app-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.classList.add(t);}catch(e){document.documentElement.classList.add('dark');}})()`,
+            }}
+          />
+          <ThemeProvider>{children}</ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
+  );
+}

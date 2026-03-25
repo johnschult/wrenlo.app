@@ -1,0 +1,17 @@
+import { auth } from '@clerk/nextjs/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getBusinessById } from '@/src/services/business';
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ businessId: string }> }
+) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { businessId } = await params;
+  const business = getBusinessById(businessId);
+  if (!business) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  return NextResponse.json({ id: business.id, name: business.name, ownerName: business.ownerName });
+}
