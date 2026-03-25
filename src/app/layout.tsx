@@ -3,6 +3,10 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import "./globals.css";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "wrenlo — AI front desk for small businesses",
@@ -19,7 +23,7 @@ export default function RootLayout(
         theme: dark,
       }}
     >
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
         <body
           className="antialiased"
           style={{ background: "var(--bg)", color: "var(--text)" }}
