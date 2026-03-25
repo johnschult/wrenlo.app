@@ -222,11 +222,17 @@ export function ChatWidget(
 
     try {
       const body = mode === "preview"
-        ? { sessionId, message: userMsg.text, language: activeLocale }
+        ? {
+          sessionId,
+          message: userMsg.text,
+          language: activeLocale,
+          ...(image ? { image } : {}),
+        }
         : {
           businessId,
           message: userMsg.text,
           language: activeLocale,
+          ...(image ? { image } : {}),
           ...(convId ? { conversationId: convId } : {}),
         };
 

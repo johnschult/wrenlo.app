@@ -21,11 +21,28 @@ import { type NextRequest, NextResponse } from 'next/server';
 const MAX_HISTORY = 40;
 const SUPPORTED_LANGUAGES = new Set(['en', 'es']);
 
+type ChatImagePayload = {
+  dataUrl: string;
+  mimeType?: string;
+};
+
 function getLanguage(value: unknown): 'en' | 'es' {
   if (typeof value === 'string' && SUPPORTED_LANGUAGES.has(value)) {
     return value as 'en' | 'es';
   }
   return 'en';
+}
+
+function parseImagePayload(value: unknown): ChatImagePayload | null {
+  if (value == null) return null;
+  if (typeof value !== 'object') return null;
+
+  const dataUrl = (value as { dataUrl?: unknown }).dataUrl;
+  const mimeType = (value as { mimeType?: unknown }).mimeType;
+  if (typeof dataUrl !== 'string' || dataUrl.length === 0) return null;
+  if (mimeType != null && typeof mimeType !== 'string') return null;
+
+  return { dataUrl, ...(mimeType ? { mimeType } : {}) };
 }
 
 function buildSystemPrompt(base: string, customer: Customer | null): string {
@@ -58,8 +75,17 @@ export async function POST(req: NextRequest) {
     customerIdentifier,
     channel = 'web',
     language,
+    image,
   } = body;
   const selectedLanguage = getLanguage(language);
+  const imagePayload = parseImagePayload(image);
+
+  if (image != null && !imagePayload) {
+    return NextResponse.json(
+      { error: 'Invalid image payload' },
+      { status: 400 }
+    );
+  }
 
   if (!businessId || !message) {
     return NextResponse.json(
@@ -130,7 +156,14 @@ export async function POST(req: NextRequest) {
     : business.systemPrompt;
   const systemPrompt = buildSystemPrompt(basePrompt, customer);
   const { response: assistantResponse, followUpQuestions } =
-    await chatWithFollowups(systemPrompt, history, message, 1024, selectedLanguage);
+    await chatWithFollowups(
+      systemPrompt,
+      history,
+      message,
+      1024,
+      selectedLanguage,
+      imagePayload ?? undefined
+    );
 
   addMessage(conversation.id, 'user', message);
   addMessage(conversation.id, 'assistant', assistantResponse);

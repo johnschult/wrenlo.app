@@ -15,6 +15,10 @@ export interface Message {
 export interface ChatRequest {
 	businessId: string;
 	message: string;
+	image?: {
+		dataUrl: string;
+		mimeType?: string;
+	};
 	conversationId?: string;
 	customerId?: string;
 	customerIdentifier?: string;
