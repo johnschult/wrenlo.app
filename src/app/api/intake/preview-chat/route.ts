@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { chat } from '@/src/services/llm';
-import { sessions } from '@/src/lib/sessions';
-import type { Message } from '@/src/types';
+import { sessions } from '@/lib/sessions';
+import { chatWithFollowups } from '@/services/llm';
+import type { Message } from '@/types';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   const { sessionId, message } = await req.json();
@@ -16,12 +16,12 @@ export async function POST(req: NextRequest) {
   }
 
   const history: Message[] = session.previewMessages.slice(-20);
-  const response = await chat(session.systemPrompt, history, message);
+  const { response, followUpQuestions } = await chatWithFollowups(session.systemPrompt, history, message);
 
   session.previewMessages.push(
     { role: 'user', content: message },
     { role: 'assistant', content: response }
   );
 
-  return NextResponse.json({ response, conversationId: sessionId });
+  return NextResponse.json({ response, conversationId: sessionId, followUpQuestions });
 }

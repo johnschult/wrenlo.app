@@ -4,7 +4,7 @@ import {
   getBusinessById,
   getBusinessConversations,
   getBusinessStats,
-} from '@/src/services/business';
+} from '@/services/business';
 import { DashboardClient } from './dashboard-client';
 
 export default async function OwnerDashboard({

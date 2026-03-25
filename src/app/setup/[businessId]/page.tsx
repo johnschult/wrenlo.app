@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import SetupClient from '../setup-client';
-import { loadExistingAction } from '@/src/actions/intake';
+import { loadExistingAction } from '@/actions/intake';
 
 export default async function EditSetupPage({
   params,

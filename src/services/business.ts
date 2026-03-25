@@ -1,5 +1,5 @@
-import { randomUUID } from 'crypto';
 import { desc, eq, sql } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 import { db, sqlite } from '../db';
 import {
   businesses,
@@ -31,13 +31,15 @@ export function upsertBusiness(
   id: string,
   name: string,
   systemPrompt: string,
-  opts?: { clerkUserId?: string; ownerName?: string; ownerEmail?: string }
+  opts?: { clerkUserId?: string; ownerName?: string; ownerEmail?: string; exampleQuestions?: string[] }
 ): Business {
+  const exampleQuestionsJson = opts?.exampleQuestions ? JSON.stringify(opts.exampleQuestions) : '[]';
   db.insert(businesses)
     .values({
       id,
       name,
       systemPrompt,
+      exampleQuestions: exampleQuestionsJson,
       clerkUserId: opts?.clerkUserId ?? null,
       ownerName: opts?.ownerName ?? null,
       ownerNotificationEmail: opts?.ownerEmail ?? null,
@@ -47,6 +49,7 @@ export function upsertBusiness(
       set: {
         name,
         systemPrompt,
+        exampleQuestions: exampleQuestionsJson,
         clerkUserId: opts?.clerkUserId,
         ownerName: opts?.ownerName,
         ownerNotificationEmail: opts?.ownerEmail,
@@ -54,7 +57,9 @@ export function upsertBusiness(
       },
     })
     .run();
-  return getBusinessById(id)!;
+  const business = getBusinessById(id);
+  if (!business) throw new Error(`Failed to upsert business '${id}'`);
+  return business;
 }
 
 // ── Customers ─────────────────────────────────────────────────────────────────
@@ -70,7 +75,9 @@ export function getOrCreateCustomer(businessId: string, identifier: string): Cus
 
   const id = randomUUID();
   db.insert(customers).values({ id, businessId, identifier }).run();
-  return db.select().from(customers).where(eq(customers.id, id)).get()!;
+  const created = db.select().from(customers).where(eq(customers.id, id)).get();
+  if (!created) throw new Error(`Failed to create customer '${id}'`);
+  return created;
 }
 
 export function getCustomerById(id: string): Customer | null {
@@ -105,7 +112,9 @@ export function createConversation(
 ): Conversation {
   const id = randomUUID();
   db.insert(conversations).values({ id, businessId, customerId, channel }).run();
-  return db.select().from(conversations).where(eq(conversations.id, id)).get()!;
+  const conversation = db.select().from(conversations).where(eq(conversations.id, id)).get();
+  if (!conversation) throw new Error(`Failed to create conversation '${id}'`);
+  return conversation;
 }
 
 export function getConversationById(id: string): Conversation | null {
@@ -177,10 +186,10 @@ export function addMessage(
 export function getConversationMessages(conversationId: string, limit = 40): DbMessage[] {
   return sqlite
     .prepare(
-      `SELECT * FROM (
-         SELECT * FROM messages WHERE conversation_id = ?
-         ORDER BY created_at DESC LIMIT ?
-       ) ORDER BY created_at ASC`
+      `SELECT id, conversation_id, role, content, created_at FROM (
+         SELECT rowid AS message_rowid, * FROM messages WHERE conversation_id = ?
+         ORDER BY created_at DESC, rowid DESC LIMIT ?
+       ) ORDER BY created_at ASC, message_rowid ASC`
     )
     .all(conversationId, limit) as DbMessage[];
 }
@@ -257,4 +266,5 @@ export function getCustomerConversations(customerId: string): Conversation[] {
 }
 
 // Re-export types consumers need
-export type { Business, Customer, Conversation, DbMessage };
+export type { Business, Conversation, Customer, DbMessage };
+

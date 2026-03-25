@@ -1,9 +1,15 @@
 "use client";
 
-import { RotateCw } from "lucide-react";
+import { useState } from "react";
 
-const INPUT_CLS =
-  "w-full bg-(--surface) border border-(--border-strong) rounded-xl px-4 py-2.5 text-sm placeholder-(--text-muted) focus:outline-none focus:border-brand";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { ChevronRight, RotateCw } from "lucide-react";
 
 interface UrlEntry {
   id: string;
@@ -33,7 +39,7 @@ function UrlFields({
     <>
       <div className="space-y-2 mb-3">
         {urls.map((entry, i) => (
-          <input
+          <Input
             key={entry.id}
             type="url"
             value={entry.value}
@@ -45,36 +51,38 @@ function UrlFields({
               ? "https://yourbusiness.com"
               : "https://another-page.com"}
             disabled={analyzing}
-            className={`${INPUT_CLS} disabled:opacity-50`}
+            className="h-11 bg-card"
           />
         ))}
       </div>
       {urls.length < 5 && (
-        <button
+        <Button
           onClick={onAddUrl}
           disabled={analyzing}
-          className="text-xs text-brand mb-3 hover:text-brand-light disabled:opacity-50"
+          variant="ghost"
+          size="sm"
+          className="mb-3 px-0 text-primary hover:text-primary"
           type="button"
         >
           + Add another URL
-        </button>
+        </Button>
       )}
       {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-      <button
+      <Button
         onClick={onAnalyze}
         disabled={analyzing}
-        className="w-full bg-brand  hover:bg-brand-hover disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors"
+        className="h-11 w-full"
         type="button"
       >
         {analyzing
           ? (
-            <div className="flex items-center justify-center gap-1">
-              <RotateCw className="animate-spin mr-2" size={16} />
+            <div className="flex items-center justify-center gap-2">
+              <RotateCw className="animate-spin" size={16} />
               Analyzing…
             </div>
           )
           : buttonLabel}
-      </button>
+      </Button>
     </>
   );
 }
@@ -98,23 +106,36 @@ export function UrlAnalyzer({
   error,
   isEdit,
 }: UrlAnalyzerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
     <section>
       <h2 className="text-xl font-bold mb-1">
         {isEdit ? "Edit your AI front desk" : "Set up your AI front desk"}
       </h2>
-      <p className="text-(--text-secondary) text-sm mb-4">
+      <p className="text-muted-foreground text-sm mb-4">
         {isEdit
           ? "Refine your AI or analyze new URLs to update it."
           : "Paste your business URL and we'll build your AI from it."}
       </p>
       {isEdit
         ? (
-          <details className="mb-2">
-            <summary className="text-xs text-brand cursor-pointer select-none hover:text-brand-light mb-3">
-              Re-analyze from URLs
-            </summary>
-            <div className="mt-3">
+          <Collapsible className="mb-2" open={isOpen} onOpenChange={setIsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mb-3 px-0 text-xs text-primary hover:text-primary"
+              >
+                <ChevronRight
+                  className={`mr-1 h-3.5 w-3.5 transition-transform ${
+                    isOpen ? "rotate-90" : ""
+                  }`}
+                />
+                Re-analyze from URLs
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
               <UrlFields
                 urls={urls}
                 onUrlChange={onUrlChange}
@@ -124,8 +145,8 @@ export function UrlAnalyzer({
                 error={error}
                 buttonLabel="Re-analyze"
               />
-            </div>
-          </details>
+            </CollapsibleContent>
+          </Collapsible>
         )
         : (
           <UrlFields

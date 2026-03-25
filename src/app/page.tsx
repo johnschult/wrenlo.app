@@ -1,5 +1,6 @@
-import { ThemeToggle } from "@/src/lib/theme";
-import { getBusinessesByClerkUserId } from "@/src/services/business";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/lib/theme";
+import { getBusinessesByClerkUserId } from "@/services/business";
 import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,19 +29,16 @@ export default async function LandingPage() {
           priority
         />
 
-        <p className="text-(--text-secondary) text-lg leading-relaxed">
+        <p className="text-muted-foreground text-lg leading-relaxed">
           An AI front desk that knows your business, handles customers, and
           sends you the leads that matter.
         </p>
 
-        <Link
-          href="/sign-up"
-          className="bg-brand hover:bg-brand-hover text-white font-semibold px-8 py-3 rounded-full transition-colors"
-        >
-          Get started
-        </Link>
+        <Button asChild size="lg" className="rounded-full px-8">
+          <Link href="/sign-up">Get started</Link>
+        </Button>
 
-        <p className="text-(--text-muted) text-sm">Coming soon</p>
+        <p className="text-muted-foreground text-sm">Coming soon</p>
       </div>
     </main>
   );

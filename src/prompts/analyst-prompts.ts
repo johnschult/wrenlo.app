@@ -52,7 +52,19 @@ For escalation triggers, always include these defaults plus any business-specifi
 - Legal, insurance, or warranty questions
 - Urgent scheduling conflicts
 
-Output ONLY the system prompt text — no preamble, no explanation, no markdown fences.`;
+OUTPUT FORMAT:
+1. First, output the complete system prompt text (500–800 words)
+2. Then, on a new line, output exactly this JSON array of 3–5 example questions customers might ask:
+[["Question 1?", "Question 2?", "Question 3?"]]
+
+The example questions MUST:
+- Be natural, realistic questions customers would ask
+- Relate directly to the business services, pricing, or booking
+- Be 5–15 words each (concise)
+- Be answerable by the system prompt
+- Be actionable by clicking to populate the chat input
+
+Example questions for an auto detailing business: ["How much does a full detail cost?", "Can you do ceramic coating?", "What times do you have available?", "Do you offer mobile detailing?"]`;
 
 // ── Refinement: current prompt + feedback → updated prompt ────────────────────
 

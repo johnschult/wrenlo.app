@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Moon, Sun } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./widget.module.css";
@@ -10,6 +12,7 @@ interface Message {
   text: string;
   imageDataUrl?: string;
   time: Date;
+  followUpQuestions?: string[];
 }
 
 interface Props {
@@ -18,6 +21,7 @@ interface Props {
   businessName: string;
   mode: "live" | "preview";
   initialTheme?: "dark" | "light";
+  exampleQuestions?: string[];
 }
 
 function renderMarkdown(text: string): string {
@@ -54,7 +58,8 @@ function renderMarkdown(text: string): string {
 }
 
 export function ChatWidget(
-  { businessId, sessionId, businessName, mode, initialTheme }: Props,
+  { businessId, sessionId, businessName, mode, initialTheme, exampleQuestions }:
+    Props,
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -66,6 +71,10 @@ export function ChatWidget(
   // Always start dark on SSR; useEffect sets correct value on client
   const [darkMode, setDarkMode] = useState(true);
   const [convId, setConvId] = useState<string | null>(null);
+  const [showExampleQuestions, setShowExampleQuestions] = useState(true);
+  const [pendingAssistantMessageId, setPendingAssistantMessageId] = useState<
+    string | null
+  >(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +98,26 @@ export function ChatWidget(
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  const scrollAssistantMessageToTop = useCallback((messageId: string) => {
+    const messageElement = document.querySelector(
+      `[data-message-id="${messageId}"]`,
+    );
+    if (messageElement instanceof HTMLElement) {
+      messageElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!pendingAssistantMessageId) return;
+
+    const rafId = window.requestAnimationFrame(() => {
+      scrollAssistantMessageToTop(pendingAssistantMessageId);
+      setPendingAssistantMessageId(null);
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [pendingAssistantMessageId, scrollAssistantMessageToTop]);
+
   const toggleTheme = () => {
     const next = !darkMode;
     setDarkMode(next);
@@ -106,6 +135,7 @@ export function ChatWidget(
     setSending(true);
     setInput("");
     setPendingImage(null);
+    setShowExampleQuestions(false);
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -141,22 +171,26 @@ export function ChatWidget(
       await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
       setTyping(false);
 
+      const assistantMessageId = (Date.now() + 1).toString();
+      setPendingAssistantMessageId(assistantMessageId);
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: assistantMessageId,
           role: "assistant",
           text: data.response,
           time: new Date(),
+          followUpQuestions: data.followUpQuestions,
         },
       ]);
-      setTimeout(scrollToBottom, 50);
     } catch {
       setTyping(false);
+      const assistantMessageId = (Date.now() + 1).toString();
+      setPendingAssistantMessageId(assistantMessageId);
       setMessages((prev) => [
         ...prev,
         {
-          id: (Date.now() + 1).toString(),
+          id: assistantMessageId,
           role: "assistant",
           text: "Sorry, something went wrong. Please try again.",
           time: new Date(),
@@ -189,6 +223,79 @@ export function ChatWidget(
     reader.readAsDataURL(file);
   };
 
+  const handleExampleQuestionClick = useCallback(async (question: string) => {
+    setShowExampleQuestions(false);
+    setSending(true);
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      text: question,
+      time: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setTyping(true);
+    setTimeout(scrollToBottom, 50);
+
+    try {
+      const body = mode === "preview" ? { sessionId, message: question } : {
+        businessId,
+        message: question,
+        ...(convId ? { conversationId: convId } : {}),
+      };
+
+      const endpoint = mode === "preview"
+        ? "/api/intake/preview-chat"
+        : "/api/chat";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      if (data.conversationId) setConvId(data.conversationId);
+
+      await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+      setTyping(false);
+
+      const assistantMessageId = (Date.now() + 1).toString();
+      setPendingAssistantMessageId(assistantMessageId);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: "assistant",
+          text: data.response,
+          time: new Date(),
+          followUpQuestions: data.followUpQuestions,
+        },
+      ]);
+    } catch {
+      setTyping(false);
+      const assistantMessageId = (Date.now() + 1).toString();
+      setPendingAssistantMessageId(assistantMessageId);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMessageId,
+          role: "assistant",
+          text: "Sorry, something went wrong. Please try again.",
+          time: new Date(),
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }, [
+    mode,
+    sessionId,
+    businessId,
+    convId,
+    scrollToBottom,
+  ]);
+
   return (
     <div
       className={`${styles.body} ${darkMode ? styles.dark : ""} ${
@@ -209,14 +316,16 @@ export function ChatWidget(
               </div>
             </div>
           </div>
-          <button
+          <Button
             className={styles.themeToggle}
             onClick={toggleTheme}
             aria-label="Toggle theme"
             type="button"
+            variant="ghost"
+            size="icon-sm"
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          </Button>
         </header>
 
         {/* Messages */}
@@ -224,11 +333,29 @@ export function ChatWidget(
           {messages.length === 0 && (
             <div className={styles.emptyState}>
               <p>Hi! How can I help you today?</p>
+              {showExampleQuestions && exampleQuestions &&
+                exampleQuestions.length > 0 && (
+                <div className={styles.exampleQuestions}>
+                  {exampleQuestions.map((question) => (
+                    <Button
+                      key={question}
+                      onClick={() => handleExampleQuestionClick(question)}
+                      variant="outline"
+                      size="sm"
+                      className={styles.exampleQuestionBtn}
+                      type="button"
+                    >
+                      {question}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
           {messages.map((msg) => (
             <div
               key={msg.id}
+              data-message-id={msg.id}
               className={`${styles.messageGroup} ${
                 msg.role === "user" ? styles.userGroup : styles.assistantGroup
               }`}
@@ -266,6 +393,23 @@ export function ChatWidget(
                   })}
                 </span>
               </div>
+              {msg.role === "assistant" && msg.followUpQuestions &&
+                msg.followUpQuestions.length > 0 && (
+                <div className={styles.followUpQuestions}>
+                  {msg.followUpQuestions.map((question) => (
+                    <Button
+                      key={`${msg.id}-${question}`}
+                      onClick={() => handleExampleQuestionClick(question)}
+                      variant="outline"
+                      size="sm"
+                      className={styles.followUpQuestionBtn}
+                      type="button"
+                    >
+                      {question}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
           {typing && (
@@ -292,41 +436,45 @@ export function ChatWidget(
               alt="Pending"
               className={styles.imagePreview}
             />
-            <button
+            <Button
               onClick={() => setPendingImage(null)}
               className={styles.removeImage}
               type="button"
+              variant="ghost"
+              size="icon-sm"
             >
               ✕
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Input */}
         <div className={styles.inputArea}>
           <div className={styles.inputRow}>
-            <button
+            <Button
               className={styles.attachBtn}
               onClick={() => fileRef.current?.click()}
               aria-label="Attach image"
               type="button"
+              variant="ghost"
+              size="icon-sm"
             >
               📎
-            </button>
-            <textarea
+            </Button>
+            <input
+              type="text"
               className={styles.messageInput}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   handleSend();
                 }
               }}
               placeholder={`Message ${businessName}…`}
-              rows={1}
             />
-            <button
+            <Button
               className={`${styles.sendBtn} ${
                 (!input.trim() && !pendingImage) || sending
                   ? styles.sendDisabled
@@ -338,7 +486,7 @@ export function ChatWidget(
               type="button"
             >
               ↑
-            </button>
+            </Button>
           </div>
           <p className={styles.poweredBy}>
             powered by{" "}
@@ -348,7 +496,7 @@ export function ChatWidget(
           </p>
         </div>
 
-        <input
+        <Input
           ref={fileRef}
           type="file"
           accept="image/*"

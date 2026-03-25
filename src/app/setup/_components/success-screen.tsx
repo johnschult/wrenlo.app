@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 export interface SuccessData {
@@ -14,41 +16,45 @@ interface SuccessScreenProps {
 export function SuccessScreen({ success, isEdit }: SuccessScreenProps) {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
-      <div className="bg-(--surface) border border-(--border-strong) rounded-2xl p-8 max-w-md w-full text-center">
-        <div className="text-4xl mb-4">🎉</div>
-        <h2 className="text-2xl font-bold mb-2">
-          {isEdit ? "Changes saved!" : "You're live!"}
-        </h2>
-        <p className="text-(--text-secondary) mb-6">
-          Your AI front desk is ready. Share the widget link or embed it on your
-          site.
-        </p>
-        <div className="space-y-3 text-left mb-6">
-          <div>
-            <p className="text-xs text-(--text-secondary) mb-1">Widget URL</p>
-            <a
-              href={success.widgetUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-brand text-sm break-all"
-            >
-              {`${window.location.origin}${success.widgetUrl}`}
-            </a>
+      <Card className="w-full max-w-md border border-border/70 bg-card p-4 text-center shadow-none">
+        <CardHeader className="gap-2 pb-2">
+          <div className="text-4xl">🎉</div>
+          <CardTitle className="text-2xl font-bold">
+            {isEdit ? "Changes saved!" : "You're live!"}
+          </CardTitle>
+          <p className="text-muted-foreground">
+            Your AI front desk is ready. Share the widget link or embed it on
+            your site.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6 text-left">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Widget URL</p>
+              <a
+                href={success.widgetUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary text-sm break-all"
+              >
+                {`${window.location.origin}${success.widgetUrl}`}
+              </a>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Dashboard</p>
+              <Link
+                href={success.dashboardUrl}
+                className="text-primary text-sm"
+              >
+                {`${window.location.origin}${success.dashboardUrl}`}
+              </Link>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-(--text-secondary) mb-1">Dashboard</p>
-            <Link href={success.dashboardUrl} className="text-brand text-sm">
-              {`${window.location.origin}${success.dashboardUrl}`}
-            </Link>
-          </div>
-        </div>
-        <Link
-          href={success.dashboardUrl}
-          className="block w-full bg-brand hover:bg-brand-hover text-white font-semibold py-3 rounded-xl transition-colors text-center"
-        >
-          Go to Dashboard
-        </Link>
-      </div>
+          <Button asChild className="h-11 w-full">
+            <Link href={success.dashboardUrl}>Go to Dashboard</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

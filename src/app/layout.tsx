@@ -1,12 +1,12 @@
-import { ThemeProvider } from "@/src/lib/theme";
-import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/ui/themes";
-import type { Metadata } from "next";
-import "./globals.css";
-import { Geist } from "next/font/google";
+import { ThemeProvider } from "@/lib/theme";
 import { cn } from "@/lib/utils";
+import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
+import type { Metadata } from "next";
+import { Geist } from "next/font/google";
+import "./globals.css";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "wrenlo — AI front desk for small businesses",
@@ -20,10 +20,14 @@ export default function RootLayout(
   return (
     <ClerkProvider
       appearance={{
-        theme: dark,
+        theme: shadcn,
       }}
     >
-      <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
+      <html
+        lang="en"
+        suppressHydrationWarning
+        className={cn("font-sans", geist.variable)}
+      >
         <body
           className="antialiased"
           style={{ background: "var(--bg)", color: "var(--text)" }}

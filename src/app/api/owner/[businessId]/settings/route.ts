@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { getBusinessById } from '@/src/services/business';
+import { getBusinessById } from '@/services/business';
 
 export async function GET(
   _req: NextRequest,

@@ -4,10 +4,12 @@ import {
   analyzeUrlsAction,
   goLiveAction,
   refinePromptAction,
-} from "@/src/actions/intake";
-import { ThemeToggle, useTheme } from "@/src/lib/theme";
-import type { ExtractedBusinessData } from "@/src/types";
+} from "@/actions/intake";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle, useTheme } from "@/lib/theme";
+import type { ExtractedBusinessData } from "@/types";
 import { UserButton } from "@clerk/nextjs";
+import { Gauge } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -19,9 +21,11 @@ import { UrlAnalyzer } from "./_components/url-analyzer";
 
 interface Props {
   existingBusinessId?: string;
-  initial?:
-    | { sessionId: string; systemPrompt: string; businessName: string }
-    | null;
+  initial?: {
+    sessionId: string;
+    systemPrompt: string;
+    businessName: string;
+  } | null;
 }
 
 type Step = "url" | "ready" | "success";
@@ -45,6 +49,18 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
   const [goingLive, setGoingLive] = useState(false);
   const [error, setError] = useState("");
   const [previewKey, setPreviewKey] = useState(0);
+
+  const clerkAppearance = {
+    variables: {
+      colorPrimary: "#D85A30",
+      colorBackground: theme === "dark" ? "#1a1a19" : "#ffffff",
+      colorText: theme === "dark" ? "#e8e8e6" : "#0d0d0c",
+      colorTextSecondary: theme === "dark" ? "#a8a89e" : "#6b6b65",
+      colorNeutral: theme === "dark" ? "#e8e8e6" : "#0d0d0c",
+      colorInputBackground: theme === "dark" ? "#262625" : "#f5f5f4",
+      colorInputText: theme === "dark" ? "#e8e8e6" : "#0d0d0c",
+    },
+  };
 
   const isEdit = Boolean(existingBusinessId);
 
@@ -113,31 +129,40 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-(--bg) text-(--text) flex flex-col">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-(--border) shrink-0">
-        <Link href="/" className="flex items-center gap-2">
-          <Image src="/wrenlo-logo.svg" alt="" width={113} height={30} />
-        </Link>
-        <nav className="flex items-center gap-3">
-          {existingBusinessId && (
-            <Link
-              href={`/owner/${existingBusinessId}`}
-              className="text-sm text-(--text-secondary) hover:text-(--text)"
-            >
-              Dashboard
-            </Link>
-          )}
-          <ThemeToggle />
-          <UserButton />
-        </nav>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur md:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/wrenlo-logo.svg" alt="" width={113} height={30} />
+          </Link>
+          <nav className="flex items-center gap-2 md:gap-3">
+            {existingBusinessId && (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-8 min-w-24 justify-center px-2.5"
+              >
+                <Link
+                  href={`/owner/${existingBusinessId}`}
+                  className="flex items-center"
+                >
+                  <Gauge className="size-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            )}
+            <ThemeToggle />
+            <UserButton appearance={clerkAppearance} />
+          </nav>
+        </div>
       </header>
 
       {step === "success" && success
         ? <SuccessScreen success={success} isEdit={isEdit} />
         : (
           <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-            {/* Left panel */}
-            <div className="lg:w-105 lg:overflow-y-auto p-6 space-y-6 border-b lg:border-b-0 lg:border-r border-(--border) shrink-0">
+            <div className="lg:w-105 lg:overflow-y-auto p-6 space-y-6 border-b lg:border-b-0 lg:border-r border-border shrink-0">
               <UrlAnalyzer
                 urls={urls}
                 onUrlChange={setUrl}
@@ -177,17 +202,16 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
               )}
             </div>
 
-            {/* Right panel: preview */}
             <div className="flex-1 min-h-100 lg:min-h-0">
               {!sessionId
                 ? (
-                  <div className="h-full flex flex-col items-center justify-center gap-3 text-(--text-muted)">
+                  <div className="h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
                     <Image
-                      src="/wrenlo-logo.svg"
+                      src="/wrenlo-icon.svg"
                       alt=""
                       width={48}
                       height={48}
-                      className="opacity-20"
+                      className="opacity-40"
                     />
                     <p className="text-sm">
                       Your AI front desk preview will appear here
@@ -198,7 +222,9 @@ export default function SetupClient({ existingBusinessId, initial }: Props) {
                   <iframe
                     key={`${previewKey}-${theme}`}
                     src={`/w/preview/${sessionId}?name=${
-                      encodeURIComponent(bizName)
+                      encodeURIComponent(
+                        bizName,
+                      )
                     }&theme=${theme}`}
                     className="w-full h-full border-0"
                     sandbox="allow-scripts allow-same-origin allow-forms"

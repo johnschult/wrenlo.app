@@ -1,7 +1,8 @@
 "use client";
 
-const INPUT_CLS =
-  "w-full bg-(--surface) border border-(--border-strong) rounded-xl px-4 py-2.5 text-sm placeholder-(--text-muted) focus:outline-none focus:border-brand";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface GoLiveFormProps {
   bizName: string;
@@ -29,68 +30,68 @@ export function GoLiveForm({
   isEdit,
 }: GoLiveFormProps) {
   return (
-    <section className="border-t border-(--border) pt-6">
+    <section className="border-t border-border pt-6">
       <h3 className="font-semibold mb-3">
         {isEdit ? "Save changes" : "Go live"}
       </h3>
       <div className="space-y-3">
         <div>
-          <label
+          <Label
             htmlFor="bizName"
-            className="text-xs text-(--text-secondary) mb-1 block"
+            className="mb-1 text-xs text-muted-foreground"
           >
             Business name
-          </label>
-          <input
+          </Label>
+          <Input
             id="bizName"
             type="text"
             value={bizName}
             onChange={(e) => onBizNameChange(e.target.value)}
             placeholder="Your Business Name"
             disabled={analyzing}
-            className={`${INPUT_CLS} disabled:opacity-50`}
+            className="h-11 bg-card"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label
+            <Label
               htmlFor="ownerName"
-              className="text-xs text-(--text-secondary) mb-1 block"
+              className="mb-1 text-xs text-muted-foreground"
             >
               Your name
-            </label>
-            <input
+            </Label>
+            <Input
               id="ownerName"
               type="text"
               value={ownerName}
               onChange={(e) => onOwnerNameChange(e.target.value)}
               placeholder="Optional"
               disabled={analyzing}
-              className={`${INPUT_CLS} disabled:opacity-50`}
+              className="h-11 bg-card"
             />
           </div>
           <div>
-            <label
+            <Label
               htmlFor="ownerEmail"
-              className="text-xs text-(--text-secondary) mb-1 block"
+              className="mb-1 text-xs text-muted-foreground"
             >
               Email
-            </label>
-            <input
+            </Label>
+            <Input
               id="ownerEmail"
               type="email"
               value={ownerEmail}
               onChange={(e) => onOwnerEmailChange(e.target.value)}
               placeholder="Optional"
               disabled={analyzing}
-              className={`${INPUT_CLS} disabled:opacity-50`}
+              className="h-11 bg-card"
             />
           </div>
         </div>
-        <button
+        <Button
           onClick={onGoLive}
           disabled={analyzing || goingLive}
-          className="w-full bg-brand hover:bg-brand-hover disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors"
+          className="h-11 w-full"
           type="button"
         >
           {goingLive
@@ -98,7 +99,7 @@ export function GoLiveForm({
             : isEdit
             ? "Save Changes"
             : "Go Live"}
-        </button>
+        </Button>
       </div>
     </section>
   );
