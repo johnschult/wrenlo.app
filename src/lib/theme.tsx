@@ -1,9 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { createContext, useContext, useEffect, useState } from "react";
+import { setAppThemeCookie } from "@/actions/theme";
+import { Button } from "@/components/ui/button";
 export type Theme = "dark" | "light";
 
 const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void }>({
@@ -16,6 +17,11 @@ function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle("light", theme === "light");
 }
 
+function persistTheme(theme: Theme) {
+  localStorage.setItem("wrenlo-app-theme", theme);
+  void setAppThemeCookie(theme);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
@@ -26,13 +32,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         ? "dark"
         : "light");
     applyTheme(initial);
+    persistTheme(initial);
     setTheme(initial);
   }, []);
 
   const toggleTheme = () => {
     const next: Theme = theme === "dark" ? "light" : "dark";
     applyTheme(next);
-    localStorage.setItem("wrenlo-app-theme", next);
+    persistTheme(next);
     setTheme(next);
   };
 

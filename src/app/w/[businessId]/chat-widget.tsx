@@ -1,5 +1,11 @@
 "use client";
 
+import { Moon, Sun } from "lucide-react";
+import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   type AppLocale,
   DEFAULT_LOCALE,
@@ -7,11 +13,6 @@ import {
 } from "@/18n/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Moon, Sun } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import styles from "./widget.module.css";
 
 interface Message {
@@ -38,6 +39,57 @@ type LocaleMessage = {
   type?: string;
   locale?: string;
 };
+
+type StreamMetaPayload = {
+  conversationId?: string;
+};
+
+type StreamTokenPayload = {
+  delta?: string;
+};
+
+type StreamDonePayload = {
+  response?: string;
+  followUpQuestions?: string[];
+  answerOptions?: string[];
+};
+
+type StreamErrorPayload = {
+  message?: string;
+};
+
+function parseEventBlock(
+  block: string,
+): { event: string; data: string } | null {
+  const lines = block.split("\n");
+  let event = "message";
+  const dataLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("event:")) {
+      event = line.slice(6).trim();
+      continue;
+    }
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trim());
+    }
+  }
+
+  if (dataLines.length === 0) return null;
+  return { event, data: dataLines.join("\n") };
+}
+
+function getNearestScrollableAncestor(el: HTMLElement): HTMLElement | null {
+  let node: HTMLElement | null = el.parentElement;
+  while (node) {
+    const style = window.getComputedStyle(node);
+    const overflowY = style.overflowY;
+    const canScroll = overflowY === "auto" || overflowY === "scroll";
+    if (canScroll && node.scrollHeight > node.clientHeight) return node;
+    node = node.parentElement;
+  }
+  return null;
+}
 
 function resolveLocale(
   candidates: Array<string | null | undefined>,
@@ -76,16 +128,14 @@ export function ChatWidget(
   const [darkMode, setDarkMode] = useState(true);
   const [convId, setConvId] = useState<string | null>(null);
   const [showExampleQuestions, setShowExampleQuestions] = useState(true);
-  const [pendingAssistantMessageId, setPendingAssistantMessageId] = useState<
-    string | null
-  >(null);
   const appLocale = useLocale();
   const [activeLocale, setActiveLocale] = useState<AppLocale>(
     initialLocale ?? DEFAULT_LOCALE,
   );
   const t = useTranslations("widget");
   const fileRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesAreaRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     const browserLocale = typeof navigator === "undefined"
@@ -136,29 +186,44 @@ export function ChatWidget(
     } catch {}
   }, [mode, initialTheme]);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
   const scrollAssistantMessageToTop = useCallback((messageId: string) => {
-    const messageElement = document.querySelector(
-      `[data-message-id="${messageId}"]`,
-    );
-    if (messageElement instanceof HTMLElement) {
-      messageElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    const messageElement = messageRefs.current[messageId];
+    if (!(messageElement instanceof HTMLElement)) return;
+
+    messageElement.scrollIntoView({
+      block: "start",
+      inline: "nearest",
+      behavior: "auto",
+    });
+
+    const messagesArea = messagesAreaRef.current;
+    if (messagesArea) {
+      const localTop = messageElement.offsetTop;
+      const localMax = Math.max(
+        0,
+        messagesArea.scrollHeight - messagesArea.clientHeight,
+      );
+      messagesArea.scrollTop = Math.max(0, Math.min(localTop, localMax));
+    }
+
+    const scroller = getNearestScrollableAncestor(messageElement);
+    if (scroller) {
+      const messageRect = messageElement.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      const targetTop = scroller.scrollTop +
+        (messageRect.top - scrollerRect.top);
+      const maxTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = Math.max(0, Math.min(targetTop, maxTop));
     }
   }, []);
 
-  useEffect(() => {
-    if (!pendingAssistantMessageId) return;
-
-    const rafId = window.requestAnimationFrame(() => {
-      scrollAssistantMessageToTop(pendingAssistantMessageId);
-      setPendingAssistantMessageId(null);
+  const scheduleAssistantMessageAtTop = useCallback((messageId: string) => {
+    [0, 30, 80, 160, 280, 420].forEach((delay) => {
+      window.setTimeout(() => {
+        scrollAssistantMessageToTop(messageId);
+      }, delay);
     });
-
-    return () => window.cancelAnimationFrame(rafId);
-  }, [pendingAssistantMessageId, scrollAssistantMessageToTop]);
+  }, [scrollAssistantMessageToTop]);
 
   const toggleTheme = () => {
     const next = !darkMode;
@@ -167,6 +232,132 @@ export function ChatWidget(
       localStorage.setItem("wrenlo-widget-theme", next ? "dark" : "light");
     } catch {}
   };
+
+  const streamAssistantResponse = useCallback(async (
+    userMsg: Message,
+    image: { dataUrl: string; mimeType: string } | null,
+    assistantMessageId: string,
+  ) => {
+    const body = mode === "preview"
+      ? {
+        sessionId,
+        message: userMsg.text,
+        language: activeLocale,
+        ...(image ? { image } : {}),
+      }
+      : {
+        businessId,
+        message: userMsg.text,
+        language: activeLocale,
+        ...(image ? { image } : {}),
+        ...(convId ? { conversationId: convId } : {}),
+      };
+
+    const endpoint = mode === "preview"
+      ? "/api/intake/preview-chat"
+      : "/api/chat";
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      let errorMessage = `HTTP ${res.status}`;
+      try {
+        const err = await res.json();
+        if (typeof err?.error === "string") errorMessage = err.error;
+      } catch {}
+      throw new Error(errorMessage);
+    }
+
+    if (!res.body) throw new Error("Missing stream response body");
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split("\n\n");
+      buffer = blocks.pop() ?? "";
+
+      for (const block of blocks) {
+        const parsed = parseEventBlock(block);
+        if (!parsed) continue;
+
+        const raw = JSON.parse(parsed.data) as
+          | StreamMetaPayload
+          | StreamTokenPayload
+          | StreamDonePayload
+          | StreamErrorPayload;
+
+        if (parsed.event === "meta") {
+          const payload = raw as StreamMetaPayload;
+          if (payload.conversationId) setConvId(payload.conversationId);
+          continue;
+        }
+
+        if (parsed.event === "token") {
+          const payload = raw as StreamTokenPayload;
+          const delta = typeof payload.delta === "string" ? payload.delta : "";
+          if (!delta) continue;
+
+          scrollAssistantMessageToTop(assistantMessageId);
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, text: msg.text + delta }
+                : msg
+            )
+          );
+          continue;
+        }
+
+        if (parsed.event === "done") {
+          const payload = raw as StreamDonePayload;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantMessageId
+                ? {
+                  ...msg,
+                  text: typeof payload.response === "string" &&
+                      payload.response.length > 0
+                    ? payload.response
+                    : msg.text,
+                  followUpQuestions: Array.isArray(payload.followUpQuestions)
+                    ? payload.followUpQuestions
+                    : [],
+                  answerOptions: Array.isArray(payload.answerOptions)
+                    ? payload.answerOptions
+                    : [],
+                }
+                : msg
+            )
+          );
+          scheduleAssistantMessageAtTop(assistantMessageId);
+          continue;
+        }
+
+        if (parsed.event === "error") {
+          const payload = raw as StreamErrorPayload;
+          throw new Error(payload.message || "Request failed");
+        }
+      }
+    }
+  }, [
+    mode,
+    sessionId,
+    activeLocale,
+    businessId,
+    convId,
+    scrollAssistantMessageToTop,
+    scheduleAssistantMessageAtTop,
+  ]);
 
   const handleSend = useCallback(async () => {
     if (sending) return;
@@ -186,68 +377,29 @@ export function ChatWidget(
       imageDataUrl: image?.dataUrl,
       time: new Date(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantPlaceholder: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      text: "",
+      time: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
+    scheduleAssistantMessageAtTop(assistantMessageId);
     setTyping(true);
-    setTimeout(scrollToBottom, 50);
 
     try {
-      const body = mode === "preview"
-        ? {
-          sessionId,
-          message: userMsg.text,
-          language: activeLocale,
-          ...(image ? { image } : {}),
-        }
-        : {
-          businessId,
-          message: userMsg.text,
-          language: activeLocale,
-          ...(image ? { image } : {}),
-          ...(convId ? { conversationId: convId } : {}),
-        };
-
-      const endpoint = mode === "preview"
-        ? "/api/intake/preview-chat"
-        : "/api/chat";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      if (data.conversationId) setConvId(data.conversationId);
-
-      await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+      await streamAssistantResponse(userMsg, image, assistantMessageId);
       setTyping(false);
-
-      const assistantMessageId = (Date.now() + 1).toString();
-      setPendingAssistantMessageId(assistantMessageId);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          role: "assistant",
-          text: data.response,
-          time: new Date(),
-          followUpQuestions: data.followUpQuestions,
-          answerOptions: data.answerOptions,
-        },
-      ]);
     } catch {
       setTyping(false);
-      const assistantMessageId = (Date.now() + 1).toString();
-      setPendingAssistantMessageId(assistantMessageId);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          role: "assistant",
-          text: t("requestFailed"),
-          time: new Date(),
-        },
-      ]);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? { ...msg, text: t("requestFailed") }
+            : msg
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -255,13 +407,9 @@ export function ChatWidget(
     sending,
     input,
     pendingImage,
-    mode,
-    sessionId,
-    businessId,
-    convId,
-    activeLocale,
     t,
-    scrollToBottom,
+    scheduleAssistantMessageAtTop,
+    streamAssistantResponse,
   ]);
 
   const handleFile = (file: File) => {
@@ -287,73 +435,36 @@ export function ChatWidget(
       text: question,
       time: new Date(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantPlaceholder: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      text: "",
+      time: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
+    scheduleAssistantMessageAtTop(assistantMessageId);
     setTyping(true);
-    setTimeout(scrollToBottom, 50);
 
     try {
-      const body = mode === "preview"
-        ? { sessionId, message: question, language: activeLocale }
-        : {
-          businessId,
-          message: question,
-          language: activeLocale,
-          ...(convId ? { conversationId: convId } : {}),
-        };
-
-      const endpoint = mode === "preview"
-        ? "/api/intake/preview-chat"
-        : "/api/chat";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      if (data.conversationId) setConvId(data.conversationId);
-
-      await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+      await streamAssistantResponse(userMsg, null, assistantMessageId);
       setTyping(false);
-
-      const assistantMessageId = (Date.now() + 1).toString();
-      setPendingAssistantMessageId(assistantMessageId);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          role: "assistant",
-          text: data.response,
-          time: new Date(),
-          followUpQuestions: data.followUpQuestions,
-          answerOptions: data.answerOptions,
-        },
-      ]);
     } catch {
       setTyping(false);
-      const assistantMessageId = (Date.now() + 1).toString();
-      setPendingAssistantMessageId(assistantMessageId);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantMessageId,
-          role: "assistant",
-          text: t("requestFailed"),
-          time: new Date(),
-        },
-      ]);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === assistantMessageId
+            ? { ...msg, text: t("requestFailed") }
+            : msg
+        )
+      );
     } finally {
       setSending(false);
     }
   }, [
-    mode,
-    sessionId,
-    businessId,
-    convId,
-    activeLocale,
+    scheduleAssistantMessageAtTop,
     t,
-    scrollToBottom,
+    streamAssistantResponse,
   ]);
 
   return (
@@ -367,7 +478,7 @@ export function ChatWidget(
         <header className={styles.header}>
           <div className={styles.headerLeft}>
             <div className={styles.avatar}>
-              <img src="/wrenlo-icon.svg" alt="" />
+              <Image src="/wrenlo-icon.svg" alt="icon" width={30} height={30} />
             </div>
             <div>
               <div className={styles.businessName}>{businessName}</div>
@@ -389,7 +500,7 @@ export function ChatWidget(
         </header>
 
         {/* Messages */}
-        <div className={styles.messagesArea}>
+        <div ref={messagesAreaRef} className={styles.messagesArea}>
           {messages.length === 0 && (
             <div className={styles.emptyState}>
               <p>{t("emptyGreeting")}</p>
@@ -415,6 +526,9 @@ export function ChatWidget(
           {messages.map((msg) => (
             <div
               key={msg.id}
+              ref={(el) => {
+                messageRefs.current[msg.id] = el;
+              }}
               data-message-id={msg.id}
               className={`${styles.messageGroup} ${
                 msg.role === "user" ? styles.userGroup : styles.assistantGroup
@@ -429,7 +543,7 @@ export function ChatWidget(
               >
                 <div className={styles.messageContent}>
                   {msg.imageDataUrl && (
-                    <img
+                    <Image
                       src={msg.imageDataUrl}
                       alt={t("attachedAlt")}
                       className={styles.messageImage}
@@ -514,13 +628,12 @@ export function ChatWidget(
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Image preview */}
         {pendingImage && (
           <div className={styles.imagePreviewArea}>
-            <img
+            <Image
               src={pendingImage.dataUrl}
               alt={t("pendingAlt")}
               className={styles.imagePreview}

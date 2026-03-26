@@ -52,10 +52,10 @@ For escalation triggers, always include these defaults plus any business-specifi
 - Legal, insurance, or warranty questions
 - Urgent scheduling conflicts
 
-OUTPUT FORMAT:
-1. First, output the complete system prompt text (500–800 words)
-2. Then, on a new line, output exactly this JSON array of 3–5 example questions customers might ask:
-[["Question 1?", "Question 2?", "Question 3?"]]
+OUTPUT REQUIREMENTS:
+- Produce one complete system prompt (500–800 words)
+- Provide 3–5 realistic example questions customers might ask
+- Keep output clean and machine-readable for structured parsing
 
 The example questions MUST:
 - Be natural, realistic questions customers would ask

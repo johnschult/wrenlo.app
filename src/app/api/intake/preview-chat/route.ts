@@ -1,5 +1,8 @@
 import { sessions } from '@/lib/sessions';
-import { chatWithFollowups } from '@/services/llm';
+import {
+  extractFollowupsFromSteps,
+  streamChatWithFollowups,
+} from '@/services/llm';
 import type { Message } from '@/types';
 import { type NextRequest, NextResponse } from 'next/server';
 
@@ -61,19 +64,67 @@ export async function POST(req: NextRequest) {
   const promptWithVoice = `${prompt}\n\n[${getVoiceInstruction(selectedLanguage)}]`;
 
   const history: Message[] = session.previewMessages.slice(-20);
-  const { response, followUpQuestions, answerOptions } = await chatWithFollowups(
-    promptWithVoice,
-    history,
-    message,
-    1024,
-    selectedLanguage,
-    imagePayload ?? undefined
-  );
+  session.previewMessages.push({ role: 'user', content: message });
 
-  session.previewMessages.push(
-    { role: 'user', content: message },
-    { role: 'assistant', content: response }
-  );
+  return createSseResponse(async ({ event }) => {
+    event('meta', { conversationId: sessionId });
 
-  return NextResponse.json({ response, conversationId: sessionId, followUpQuestions, answerOptions });
+    const streamResult = streamChatWithFollowups(
+      promptWithVoice,
+      history,
+      message,
+      1024,
+      selectedLanguage,
+      imagePayload ?? undefined
+    );
+
+    let response = '';
+    for await (const delta of streamResult.textStream) {
+      response += delta;
+      event('token', { delta });
+    }
+
+    const followups = extractFollowupsFromSteps(await streamResult.steps as Array<{
+      toolResults: Array<{ toolName: string; output: unknown }>;
+    }>);
+
+    session.previewMessages.push({ role: 'assistant', content: response });
+    event('done', {
+      response,
+      followUpQuestions: followups.followUpQuestions,
+      answerOptions: followups.answerOptions,
+    });
+  });
+}
+
+function createSseResponse(
+  execute: (helpers: { event: (name: string, data: unknown) => void }) => Promise<void>
+): Response {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const event = (name: string, data: unknown) => {
+        controller.enqueue(
+          encoder.encode(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`)
+        );
+      };
+
+      try {
+        await execute({ event });
+      } catch {
+        event('error', { message: 'Request failed' });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    },
+  });
 }

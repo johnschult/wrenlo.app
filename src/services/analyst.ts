@@ -4,25 +4,50 @@ import {
 	REFINEMENT_SYSTEM_PROMPT,
 } from '../prompts/analyst-prompts';
 import type { ExtractedBusinessData } from '../types';
-import { chat } from './llm';
+import { generateObject, generateText } from 'ai';
+import { z } from 'zod';
+import { CLAUDE_MODEL } from '../lib/ai';
 import { scrapeUrls } from './scraper';
 
 type PromptLocale = 'en' | 'es';
 
-function parseJson<T>(text: string): T {
-	const cleaned = text
-		.replace(/^```(?:json)?\s*/i, '')
-		.replace(/\s*```$/i, '')
-		.trim();
-	return JSON.parse(cleaned);
-}
+const extractedBusinessDataSchema = z.object({
+	businessName: z.string(),
+	businessType: z.string(),
+	services: z.array(
+		z.object({
+			name: z.string(),
+			price: z.string().nullable(),
+		}),
+	),
+	hours: z.string().nullable(),
+	bookingMethod: z.string().nullable(),
+	location: z.string().nullable(),
+	phone: z.string().nullable(),
+	email: z.string().nullable(),
+	tone: z.string().nullable(),
+	commonQuestions: z.array(z.string()),
+	specialFeatures: z.array(z.string()),
+	aboutText: z.string().nullable(),
+});
+
+const generatedPromptSchema = z.object({
+	systemPrompt: z.string().min(1),
+	exampleQuestions: z.array(z.string().min(1)).min(3).max(5),
+});
 
 export async function analyzeUrls(
 	urls: string[],
 ): Promise<ExtractedBusinessData> {
 	const scrapedText = await scrapeUrls(urls);
-	const response = await chat(EXTRACTION_SYSTEM_PROMPT, [], scrapedText, 2048);
-	const data = parseJson<Omit<ExtractedBusinessData, 'sourceUrls'>>(response);
+	const result = await generateObject({
+		model: CLAUDE_MODEL,
+		system: EXTRACTION_SYSTEM_PROMPT,
+		prompt: scrapedText,
+		maxOutputTokens: 2048,
+		schema: extractedBusinessDataSchema,
+	});
+	const data = result.object;
 	return { ...data, sourceUrls: urls };
 }
 
@@ -35,36 +60,18 @@ export async function generatePromptFromExtraction(
 		null,
 		2,
 	)}`;
-	const response = await chat(
-		getPromptGenerationSystemPrompt(language),
-		[],
-		userMessage,
-		4096,
-		language,
-	);
+	const result = await generateObject({
+		model: CLAUDE_MODEL,
+		system: `${getPromptGenerationSystemPrompt(language)}\n\nReturn a JSON object with keys systemPrompt and exampleQuestions.`,
+		prompt: userMessage,
+		maxOutputTokens: 4096,
+		schema: generatedPromptSchema,
+	});
 
-	// Parse the dual format: system prompt + JSON array of questions
-	// Format: [system prompt text]\n[["question1", "question2", ...]]
-	const lines = response.trim().split('\n');
-	const lastLine = lines[lines.length - 1].trim();
-
-	let systemPrompt = response;
-	let exampleQuestions: string[] = [];
-
-	// Try to extract questions from the last line if it looks like a JSON array
-	if (lastLine.startsWith('[[') && lastLine.endsWith(']]')) {
-		try {
-			const parsed = parseJson<string[][]>(lastLine);
-			exampleQuestions = parsed[0] || [];
-			// Remove the questions line from the prompt
-			systemPrompt = lines.slice(0, -1).join('\n').trim();
-		} catch {
-			// If parsing fails, just use the full response as prompt
-			systemPrompt = response;
-		}
-	}
-
-	return { systemPrompt, exampleQuestions };
+	return {
+		systemPrompt: result.object.systemPrompt,
+		exampleQuestions: result.object.exampleQuestions,
+	};
 }
 
 export async function refinePrompt(
@@ -81,5 +88,12 @@ export async function refinePrompt(
 		);
 	}
 	parts.push(`\nNew feedback from the owner:\n${feedback}`);
-	return chat(REFINEMENT_SYSTEM_PROMPT, [], parts.join('\n\n'), 4096);
+	const result = await generateText({
+		model: CLAUDE_MODEL,
+		system: REFINEMENT_SYSTEM_PROMPT,
+		prompt: parts.join('\n\n'),
+		maxOutputTokens: 4096,
+	});
+
+	return result.text;
 }

@@ -1,8 +1,8 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { generateText, streamText } from 'ai';
+import { z } from 'zod';
+import { CLAUDE_MODEL, withLanguageInstruction } from '../lib/ai';
 import type { Message } from '../types';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = 'claude-sonnet-4-6';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 type SupportedImageMime =
@@ -20,6 +20,29 @@ const SUPPORTED_IMAGE_MIME_TYPES = new Set<SupportedImageMime>([
 
 type SupportedLanguage = 'en' | 'es';
 type ImagePayload = { dataUrl: string; mimeType?: string };
+
+type FollowupPayload = {
+	followUpQuestions: string[];
+	answerOptions: string[];
+};
+
+const followupsInputSchema = z.object({
+	followUpQuestions: z.array(z.string().min(1)).max(3).default([]),
+	answerOptions: z.array(z.string().min(1)).max(4).default([]),
+});
+
+function getFollowupSystemPrompt(
+	systemPrompt: string,
+	language?: SupportedLanguage,
+): string {
+	return `${withLanguageInstruction(systemPrompt, language)}
+
+After writing your assistant response, call the suggestFollowUps tool exactly once.
+Tool rules:
+- If your assistant response includes a direct question to the customer, provide 2-4 short answer options in answerOptions and leave followUpQuestions empty.
+- If your assistant response does not include a direct customer question, provide 2-3 follow-up questions in followUpQuestions and leave answerOptions empty.
+- Never fill both arrays at the same time.`;
+}
 
 function getBase64SizeBytes(base64: string): number {
 	const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
@@ -51,43 +74,26 @@ function parseDataUrlImage(dataUrl: string): {
 	return { mimeType, base64 };
 }
 
-function buildUserMessage(
-	userMessage: string,
-	image?: ImagePayload,
-): Anthropic.MessageParam {
+function buildMessages(history: Message[], userMessage: string, image?: ImagePayload) {
+	const prior = history.map(m => ({ role: m.role, content: m.content }));
+
 	if (!image) {
-		return { role: 'user', content: userMessage };
+		return [...prior, { role: 'user' as const, content: userMessage }];
 	}
 
 	const parsed = parseDataUrlImage(image.dataUrl);
-	return {
-		role: 'user',
-		content: [
-			{ type: 'text', text: userMessage },
-			{
-				type: 'image',
-				source: {
-					type: 'base64',
-					media_type: parsed.mimeType,
-					data: parsed.base64,
-				},
-			},
-		],
-	};
-}
+	const imageDataUrl = `data:${parsed.mimeType};base64,${parsed.base64}`;
 
-function withLanguageInstruction(
-	systemPrompt: string,
-	language?: SupportedLanguage,
-): string {
-	if (!language) return systemPrompt;
-
-	const instruction =
-		language === 'es'
-			? 'Always respond in Spanish. Do not switch languages unless the user explicitly asks you to.'
-			: 'Always respond in English. Do not switch languages unless the user explicitly asks you to.';
-
-	return `${systemPrompt}\n\n${instruction}`;
+	return [
+		...prior,
+		{
+			role: 'user' as const,
+			content: [
+				{ type: 'text' as const, text: userMessage },
+				{ type: 'image' as const, image: imageDataUrl },
+			],
+		},
+	];
 }
 
 export async function chat(
@@ -98,22 +104,15 @@ export async function chat(
 	language?: SupportedLanguage,
 	image?: ImagePayload,
 ): Promise<string> {
-	const messages: Anthropic.MessageParam[] = [
-		...history.map(m => ({ role: m.role, content: m.content })),
-		buildUserMessage(userMessage, image),
-	];
-
-	const response = await client.messages.create({
-		model: MODEL,
-		max_tokens: maxTokens,
+	const result = await generateText({
+		model: CLAUDE_MODEL,
 		system: withLanguageInstruction(systemPrompt, language),
-		messages,
+		messages: buildMessages(history, userMessage, image),
+		maxOutputTokens: maxTokens,
 	});
 
-	const textBlock = response.content.find(b => b.type === 'text');
-	if (!textBlock || textBlock.type !== 'text')
-		throw new Error('No text response from Claude');
-	return textBlock.text;
+	if (!result.text?.trim()) throw new Error('No text response from Claude');
+	return result.text;
 }
 
 export async function chatWithFollowups(
@@ -128,69 +127,84 @@ export async function chatWithFollowups(
 	followUpQuestions: string[];
 	answerOptions: string[];
 }> {
-	const followupPrompt = `${withLanguageInstruction(systemPrompt, language)}
-
-**IMPORTANT: Structured reply metadata**
-After your response, append ONE of the following blocks (never both):
-
-Option A — ANSWER_OPTIONS: Use this when your response asks the customer a specific question
-(e.g. "How often do you drive?", "Which service interests you?", "What type of vehicle?").
-Provide 2-4 short answer choices the customer can pick from.
-Format: ANSWER_OPTIONS: ["Under 10k miles/year", "10k–20k miles/year", "Over 20k miles/year"]
-The answers must directly answer the question you asked. Keep each answer under 8 words.
-
-Option B — FOLLOW_UP_QUESTIONS: Use this only when your response does NOT ask a specific question.
-Provide 2-3 topics the customer might want to explore next.
-Format: FOLLOW_UP_QUESTIONS: ["Question 1?", "Question 2?", "Question 3?"]
-
-Always prefer ANSWER_OPTIONS when your response contains a question directed at the customer.`;
-
-	const messages: Anthropic.MessageParam[] = [
-		...history.map(m => ({ role: m.role, content: m.content })),
-		buildUserMessage(userMessage, image),
-	];
-
-	const response = await client.messages.create({
-		model: MODEL,
-		max_tokens: maxTokens,
-		system: followupPrompt,
-		messages,
+	const result = await generateText({
+		model: CLAUDE_MODEL,
+		system: getFollowupSystemPrompt(systemPrompt, language),
+		messages: buildMessages(history, userMessage, image),
+		maxOutputTokens: maxTokens,
+		tools: {
+			suggestFollowUps: {
+				description:
+					'Suggest follow-up UX options. Provide either answerOptions or followUpQuestions, never both.',
+				inputSchema: followupsInputSchema,
+				execute: async input => input,
+			},
+		},
 	});
 
-	const textBlock = response.content.find(b => b.type === 'text');
-	if (!textBlock || textBlock.type !== 'text')
-		throw new Error('No text response from Claude');
+	const followups = extractFollowupsFromSteps(
+		result.steps as Array<{
+			toolResults: Array<{ toolName: string; output: unknown }>;
+		}>,
+	);
 
-	const fullText = textBlock.text;
-	let responseText = fullText;
-	let followUpQuestions: string[] = [];
+	return {
+		response: result.text,
+		answerOptions: followups.answerOptions,
+		followUpQuestions: followups.followUpQuestions,
+	};
+}
+
+export function streamChatWithFollowups(
+	systemPrompt: string,
+	history: Message[],
+	userMessage: string,
+	maxTokens = 1024,
+	language?: SupportedLanguage,
+	image?: ImagePayload,
+) {
+	return streamText({
+		model: CLAUDE_MODEL,
+		system: getFollowupSystemPrompt(systemPrompt, language),
+		messages: buildMessages(history, userMessage, image),
+		maxOutputTokens: maxTokens,
+		tools: {
+			suggestFollowUps: {
+				description:
+					'Suggest follow-up UX options. Provide either answerOptions or followUpQuestions, never both.',
+				inputSchema: followupsInputSchema,
+				execute: async input => input,
+			},
+		},
+	});
+}
+
+export function extractFollowupsFromSteps(
+	steps: Array<{ toolResults: Array<{ toolName: string; output: unknown }> }>,
+): FollowupPayload {
 	let answerOptions: string[] = [];
+	let followUpQuestions: string[] = [];
 
-	// Try ANSWER_OPTIONS first
-	const answerMatch = fullText.match(/ANSWER_OPTIONS:\s*(\[[\s\S]*?\])/);
-	if (answerMatch) {
-		try {
-			responseText = fullText.slice(0, answerMatch.index).trim();
-			answerOptions = JSON.parse(answerMatch[1]);
-		} catch {
-			responseText = fullText;
+	for (const step of steps) {
+		for (const toolResult of step.toolResults) {
+			if (toolResult.toolName !== 'suggestFollowUps') continue;
+			const output = toolResult.output as {
+				answerOptions?: string[];
+				followUpQuestions?: string[];
+			};
+
+			answerOptions = Array.isArray(output.answerOptions)
+				? output.answerOptions.slice(0, 4)
+				: [];
+			followUpQuestions = Array.isArray(output.followUpQuestions)
+				? output.followUpQuestions.slice(0, 3)
+				: [];
 		}
 	}
 
-	// Fall back to FOLLOW_UP_QUESTIONS if no answer options
-	if (answerOptions.length === 0) {
-		const followupMatch = responseText.match(
-			/FOLLOW_UP_QUESTIONS:\s*(\[[\s\S]*?\])/,
-		);
-		if (followupMatch) {
-			try {
-				responseText = responseText.slice(0, followupMatch.index).trim();
-				followUpQuestions = JSON.parse(followupMatch[1]);
-			} catch {
-				responseText = fullText;
-			}
-		}
-	}
-
-	return { response: responseText, followUpQuestions, answerOptions };
+	const useAnswerOptions = answerOptions.length > 0;
+	return {
+		answerOptions: useAnswerOptions ? answerOptions : [],
+		followUpQuestions: useAnswerOptions ? [] : followUpQuestions,
+	};
 }

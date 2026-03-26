@@ -146,6 +146,7 @@
 	flex-direction: column;
 	gap: 6px;
 	scroll-behavior: smooth;
+	overflow-anchor: none;
 }
 
 .emptyState {

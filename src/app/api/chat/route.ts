@@ -13,7 +13,10 @@ import {
     updateConversationLeadScore,
 } from '@/services/business';
 import { detectLead } from '@/services/lead-detector';
-import { chatWithFollowups } from '@/services/llm';
+import {
+  extractFollowupsFromSteps,
+  streamChatWithFollowups,
+} from '@/services/llm';
 import { NotificationService } from '@/services/notifications';
 import type { Conversation, Customer, Message } from '@/types';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -151,12 +154,18 @@ export async function POST(req: NextRequest) {
     addMessage(conversation.id, 'user', message);
     touchConversation(conversation.id);
     if (customer && !isNewConversation) touchCustomerLastSeen(customer.id);
-    return NextResponse.json({
-      response: 'Thanks — the owner has been notified and will reply shortly.',
-      conversationId: conversation.id,
-      customerId: customer?.id ?? null,
-      status: conversation.status,
-      handedOff: true,
+    return createSseResponse(async ({ event }) => {
+      event('meta', {
+        conversationId: conversation.id,
+        customerId: customer?.id ?? null,
+        status: conversation.status,
+        handedOff: true,
+      });
+      event('done', {
+        response: 'Thanks - the owner has been notified and will reply shortly.',
+        followUpQuestions: [],
+        answerOptions: [],
+      });
     });
   }
 
@@ -170,8 +179,24 @@ export async function POST(req: NextRequest) {
     ? business.systemPromptEs
     : business.systemPrompt;
   const systemPrompt = buildSystemPrompt(basePrompt, customer, selectedLanguage);
-  const { response: assistantResponse, followUpQuestions, answerOptions } =
-    await chatWithFollowups(
+
+  addMessage(conversation.id, 'user', message);
+  touchConversation(conversation.id);
+
+  if (customer) {
+    if (isNewConversation) incrementCustomerConversationCount(customer.id);
+    else touchCustomerLastSeen(customer.id);
+  }
+
+  return createSseResponse(async ({ event }) => {
+    event('meta', {
+      conversationId: conversation.id,
+      customerId: customer?.id ?? null,
+      status: conversation.status,
+      handedOff: false,
+    });
+
+    const streamResult = streamChatWithFollowups(
       systemPrompt,
       history,
       message,
@@ -180,42 +205,75 @@ export async function POST(req: NextRequest) {
       imagePayload ?? undefined
     );
 
-  addMessage(conversation.id, 'user', message);
-  addMessage(conversation.id, 'assistant', assistantResponse);
-  touchConversation(conversation.id);
+    let assistantResponse = '';
 
-  if (customer) {
-    if (isNewConversation) incrementCustomerConversationCount(customer.id);
-    else touchCustomerLastSeen(customer.id);
-  }
-
-  // Lead detection
-  const leadResult = detectLead(message, assistantResponse, business);
-  if (leadResult.leadScore > conversation.leadScore) {
-    updateConversationLeadScore(conversation.id, leadResult.leadScore);
-  }
-  if (leadResult.isLead && !conversation.notifiedAt) {
-    const freshConv = getConversationById(conversation.id);
-    if (!freshConv) {
-      throw new Error(`Conversation '${conversation.id}' not found during notification`);
+    for await (const delta of streamResult.textStream) {
+      assistantResponse += delta;
+      event('token', { delta });
     }
-    const notifier = new NotificationService(business);
-    await notifier.sendLeadAlert(
-      business,
-      freshConv,
-      leadResult.triggerReason,
-      message
-    );
-    markConversationNotified(conversation.id);
-  }
 
-  return NextResponse.json({
-    response: assistantResponse,
-    conversationId: conversation.id,
-    customerId: customer?.id ?? null,
-    status: conversation.status,
-    handedOff: false,
-    followUpQuestions,
-    answerOptions,
+    const followups = extractFollowupsFromSteps(await streamResult.steps as Array<{
+      toolResults: Array<{ toolName: string; output: unknown }>;
+    }>);
+
+    addMessage(conversation.id, 'assistant', assistantResponse);
+
+    // Lead detection
+    const leadResult = detectLead(message, assistantResponse, business);
+    if (leadResult.leadScore > conversation.leadScore) {
+      updateConversationLeadScore(conversation.id, leadResult.leadScore);
+    }
+    if (leadResult.isLead && !conversation.notifiedAt) {
+      const freshConv = getConversationById(conversation.id);
+      if (!freshConv) {
+        throw new Error(`Conversation '${conversation.id}' not found during notification`);
+      }
+      const notifier = new NotificationService(business);
+      await notifier.sendLeadAlert(
+        business,
+        freshConv,
+        leadResult.triggerReason,
+        message
+      );
+      markConversationNotified(conversation.id);
+    }
+
+    event('done', {
+      response: assistantResponse,
+      followUpQuestions: followups.followUpQuestions,
+      answerOptions: followups.answerOptions,
+    });
+  });
+}
+
+function createSseResponse(
+  execute: (helpers: { event: (name: string, data: unknown) => void }) => Promise<void>
+): Response {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const event = (name: string, data: unknown) => {
+        controller.enqueue(
+          encoder.encode(`event: ${name}\ndata: ${JSON.stringify(data)}\n\n`)
+        );
+      };
+
+      try {
+        await execute({ event });
+      } catch {
+        event('error', { message: 'Request failed' });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    },
   });
 }

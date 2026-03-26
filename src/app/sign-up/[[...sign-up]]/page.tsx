@@ -81,7 +81,7 @@ export default function SignUpPage() {
                       ? "#262625"
                       : "#f5f5f4",
                     colorInputText: theme === "dark" ? "#e8e8e6" : "#0d0d0c",
-                  },
+                  } as Record<string, string>,
                   elements: {
                     socialButtonsIconButton: theme === "dark"
                       ? "bg-[#2e2e2c] border border-[rgba(255,255,255,0.16)] hover:bg-[#3a3a38] text-white"
